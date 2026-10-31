@@ -64,3 +64,8 @@ ai_key*.txt
 .env.*.local
 secrets.json
 *.secret
+
+# AI Key 相关所有文件（含 .old/.bak 等变体）
+ai_key*
+*apikey*
+
