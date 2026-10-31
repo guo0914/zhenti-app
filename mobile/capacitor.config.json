@@ -1,0 +1,27 @@
+{
+  "appId": "com.yanruilin.zhenti",
+  "appName": "行测刷题",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "always",
+    "scrollEnabled": true,
+    "limitsNavigationsToAppBoundDomains": false,
+    "allowLinkPreview": false
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#f2f4f8",
+      "showSpinner": false,
+      "iosSpinnerStyle": "small"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#f2f4f8"
+    }
+  }
+}

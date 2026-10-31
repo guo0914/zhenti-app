@@ -1,0 +1,143 @@
+name: Build iOS IPA
+
+# 用途：在 GitHub 的 macOS 机器上编译出未签名 .ipa
+#
+# 完整流程：
+#   1. 推代码到 GitHub
+#   2. Actions 自动编译（约 10-15 分钟）
+#   3. 下载 ipa
+#   4. Windows 上用 Sideloadly 签名安装到 iPhone
+#
+# 不需要 Mac，不需要开发者账号，不上架 App Store。
+#
+# 触发方式：
+#   · 手动：仓库页 → Actions → 选本 workflow → Run workflow
+#   · 自动：推送 mobile/ 或 site/ 的改动时
+
+'on':
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build Unsigned IPA
+    runs-on: macos-14
+    timeout-minutes: 60
+
+    steps:
+      # ── 1. 检出代码 ──
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Node 环境 ──
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ── 3. 显示环境信息（排查用）──
+      - name: Environment info
+        run: |
+          echo "=== Xcode ==="
+          xcodebuild -version
+          echo "=== CocoaPods ==="
+          pod --version
+          echo "=== Node ==="
+          node --version
+          echo "=== 磁盘 ==="
+          df -h / | tail -1
+
+      # ── 4. 安装 npm 依赖 ──
+      - name: Install npm deps
+        working-directory: mobile
+        run: |
+          npm install --no-audit --no-fund
+          echo "依赖安装完成"
+
+      # ── 5. 构建网页资源 + 自检 ──
+      - name: Build www
+        working-directory: mobile
+        run: |
+          node scripts/prepare-www.js
+          node scripts/verify-www.js
+
+      # ── 6. 同步到 iOS 工程 ──
+      - name: Capacitor sync
+        working-directory: mobile
+        run: |
+          npx cap sync ios
+
+      # ── 7. CocoaPods 安装 ──
+      #    --repo-update 太慢容易超时，改用直接 install；
+      #    若 Podfile.lock 不存在才更新仓库
+      - name: Install CocoaPods deps
+        working-directory: mobile/ios/App
+        run: |
+          if [ -f Podfile.lock ]; then
+            echo "Podfile.lock 存在，直接安装"
+            pod install
+          else
+            echo "首次安装，更新仓库"
+            pod install --repo-update || pod install
+          fi
+          echo "=== 检查 workspace ==="
+          ls -la App.xcworkspace 2>/dev/null || echo "警告：workspace 不存在"
+
+      # ── 8. 编译（不签名）──
+      - name: Build archive
+        working-directory: mobile/ios/App
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$PWD/build/App.xcarchive" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            clean archive \
+            2>&1 | tee build.log | tail -40
+          echo "=== archive 结果 ==="
+          ls -la build/ 2>/dev/null || true
+
+      # ── 9. 打包成 ipa ──
+      - name: Package IPA
+        working-directory: mobile/ios/App
+        run: |
+          set -e
+          APP_PATH="build/App.xcarchive/Products/Applications/App.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "错误：找不到 $APP_PATH"
+            echo "=== archive 目录结构 ==="
+            find build/App.xcarchive -maxdepth 4 -type d 2>/dev/null | head -20
+            exit 1
+          fi
+          rm -rf build/Payload build/App-unsigned.ipa
+          mkdir -p build/Payload
+          cp -R "$APP_PATH" build/Payload/
+          cd build
+          zip -r -q App-unsigned.ipa Payload
+          echo "=== IPA 信息 ==="
+          ls -lh App-unsigned.ipa
+          unzip -l App-unsigned.ipa | head -15
+
+      # ── 10. 上传 ipa ──
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: App-unsigned-ipa
+          path: mobile/ios/App/build/App-unsigned.ipa
+          retention-days: 30
+
+      # ── 11. 失败时上传日志 ──
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            mobile/ios/App/build.log
+            mobile/ios/App/build/**/*.log
+          retention-days: 7
+          if-no-files-found: ignore

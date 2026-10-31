@@ -1,0 +1,136 @@
+# ===== Codemagic 云构建配置 =====
+# 用途：在没有 Mac 的情况下，用云端 macOS 机器编译 iOS App
+#
+# 使用步骤：
+#   1. 注册 https://codemagic.io （GitHub/GitLab/Bitbucket 账号登录）
+#   2. Add application → 选 Gitee 仓库（或用 GitHub 镜像）
+#   3. Codemagic 会自动识别本文件
+#   4. 点 Start new build
+#
+# 免费额度：每月 500 分钟 macOS 构建时间（够用十几次）
+
+workflows:
+  ios-unsigned:
+    name: iOS 未签名包（用于 Sideloadly 侧载）
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    working_directory: mobile
+
+    environment:
+      node: 20.11.0
+      xcode: 15.4
+      cocoapods: default
+
+    scripts:
+      - name: 安装 Node 依赖
+        script: |
+          npm install --no-audit --no-fund
+          echo "依赖安装完成"
+
+      - name: 构建 www 并自检
+        script: |
+          npm run prepare-www 2>/dev/null || node scripts/prepare-www.js
+          node scripts/verify-www.js
+
+      - name: 同步 iOS 工程
+        script: |
+          npx cap sync ios
+
+      - name: 安装 CocoaPods 依赖
+        script: |
+          cd ios/App
+          pod install --repo-update
+          echo "Pod 安装完成"
+
+      - name: 编译（不签名）
+        script: |
+          cd ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$PWD/build/App.xcarchive" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            clean archive
+
+      - name: 打包成 ipa
+        script: |
+          cd ios/App
+          mkdir -p build/Payload
+          cp -R build/App.xcarchive/Products/Applications/App.app build/Payload/
+          cd build
+          zip -r -q App-unsigned.ipa Payload
+          ls -lh App-unsigned.ipa
+          echo "IPA_READY"
+
+    artifacts:
+      - mobile/ios/App/build/App-unsigned.ipa
+      - mobile/ios/App/build/App.xcarchive
+
+    publishing:
+      email:
+        recipients:
+          - your@email.com          # ← 改成你的邮箱，构建完成后通知
+        notify:
+          success: true
+          failure: true
+
+
+  # ===== 有付费开发者账号时用这个（直接出可安装的 ipa）=====
+  ios-signed:
+    name: iOS 已签名包（需开发者账号）
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    working_directory: mobile
+
+    environment:
+      node: 20.11.0
+      xcode: 15.4
+      cocoapods: default
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.zlfx.zhenti
+
+    scripts:
+      - name: 安装依赖
+        script: npm install --no-audit --no-fund
+
+      - name: 构建与自检
+        script: |
+          node scripts/prepare-www.js
+          node scripts/verify-www.js
+
+      - name: 同步工程
+        script: npx cap sync ios
+
+      - name: Pod install
+        script: |
+          cd ios/App
+          pod install --repo-update
+
+      - name: 设置签名
+        script: |
+          cd ios/App
+          xcode-project use-profiles
+
+      - name: 编译并导出 ipa
+        script: |
+          cd ios/App
+          xcode-project build-ipa \
+            --workspace App.xcworkspace \
+            --scheme App
+
+    artifacts:
+      - mobile/ios/App/build/ios/ipa/*.ipa
+      - mobile/ios/App/build/ios/xcodebuild*.log
+
+    publishing:
+      email:
+        recipients:
+          - your@email.com          # ← 改成你的邮箱
+        notify:
+          success: true
+          failure: true

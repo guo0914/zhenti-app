@@ -1,0 +1,30 @@
+{
+  "name": "zhenti-app",
+  "version": "1.0.0",
+  "description": "行测刷题 · 分类真题（iOS/Android 壳应用）",
+  "private": true,
+  "scripts": {
+    "prepare-www": "node scripts/prepare-www.js",
+    "prepare-deploy": "node scripts/prepare-deploy.js",
+    "deploy": "node scripts/prepare-deploy.js",
+    "sync": "node scripts/prepare-www.js && npx cap sync",
+    "verify": "node scripts/verify-www.js",
+    "add:ios": "npx cap add ios",
+    "add:android": "npx cap add android",
+    "open:ios": "npx cap open ios",
+    "open:android": "npx cap open android",
+    "build:www": "node scripts/prepare-www.js"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/preferences": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.2",
+    "@capacitor/splash-screen": "^6.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>环境诊断</title>
+
+<!-- 关键：真实加载站点样式表，才能判断 CSS 是否生效 -->
+<link rel="stylesheet" href="assets/style.css" />
+
+<style>
+/* 诊断页自身的样式，放在后面覆盖站点样式，但用独立前缀避免冲突 */
+.dg-body{font:13px/1.7 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  margin:0;padding:18px;background:#f6f7f9;color:#222}
+.dg-h1{font-size:17px;margin:0 0 4px}
+.dg-sub{color:#666;font-size:12px;margin-bottom:14px}
+.dg-box{background:#fff;border:1px solid #e2e7f0;border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.dg-box h2{font-size:13px;margin:0 0 10px;color:#4f46e5}
+.dg-kv{display:grid;grid-template-columns:170px 1fr;gap:4px 10px;font-size:12.5px}
+.dg-kv .k{color:#666}
+.dg-kv .v{font-family:Consolas,monospace;word-break:break-all}
+.dg-ok{color:#16a34a;font-weight:700}
+.dg-bad{color:#dc2626;font-weight:700}
+.dg-warn{color:#d97706;font-weight:700}
+.dg-pre{background:#f8fafc;padding:8px;border-radius:6px;font-size:11.5px;
+  overflow:auto;max-height:150px;margin:6px 0 0;font-family:Consolas,monospace}
+</style>
+</head>
+<body class="dg-body">
+
+<h1 class="dg-h1">环境诊断</h1>
+<p class="dg-sub">把这一页的完整截图发给我，就能定位问题</p>
+
+<div class="dg-box">
+  <h2>1. 当前地址</h2>
+  <div class="dg-kv" id="kvUrl"></div>
+</div>
+
+<div class="dg-box">
+  <h2>2. 样式表加载状态</h2>
+  <div class="dg-kv" id="kvCss"></div>
+</div>
+
+<div class="dg-box">
+  <h2>3. 真实组件实测（使用站点真实 class）</h2>
+  <p class="dg-sub" style="margin:0 0 10px">
+    下面用的是站点真实的 <code>options</code>/<code>opt</code>/<code>letter</code> 结构。
+    若显示成带灰底字母块的卡片 → CSS 生效；若是无边框裸文字 → CSS 未生效。
+  </p>
+  <div class="options">
+    <button class="opt" type="button">
+      <span class="letter">A</span>
+      <span class="txt">真实选项样本 A</span>
+    </button>
+    <button class="opt" type="button">
+      <span class="letter">B</span>
+      <span class="txt">真实选项样本 B</span>
+    </button>
+  </div>
+</div>
+
+<div class="dg-box">
+  <h2>4. Service Worker / 缓存</h2>
+  <div class="dg-kv" id="kvSw"></div>
+  <pre class="dg-pre" id="preCache"></pre>
+</div>
+
+<div class="dg-box">
+  <h2>5. 视口与缩放</h2>
+  <div class="dg-kv" id="kvVp"></div>
+</div>
+
+<div class="dg-box">
+  <h2>6. 实测样式值</h2>
+  <div class="dg-kv" id="kvMeasure"></div>
+</div>
+
+<script>
+function put(id, rows) {
+  document.getElementById(id).innerHTML = rows.map(function (r) {
+    var cls = r[2] === 'ok' ? 'dg-ok' : r[2] === 'bad' ? 'dg-bad'
+            : r[2] === 'warn' ? 'dg-warn' : 'v';
+    return '<span class="k">' + r[0] + '</span><span class="' + cls + '">' + r[1] + '</span>';
+  }).join('');
+}
+
+// 1. 地址
+put('kvUrl', [
+  ['完整地址', location.href],
+  ['origin', location.origin, 'ok'],
+  ['主机名', location.hostname],
+  ['端口', location.port || '(默认)', 'ok']
+]);
+
+// 2 & 6. CSS
+var cssFound = false, rules = 0, list = [];
+for (var i = 0; i < document.styleSheets.length; i++) {
+  var s = document.styleSheets[i];
+  var n = 0;
+  try { n = s.cssRules ? s.cssRules.length : 0; } catch (e) { n = -1; }
+  if (n > 0) rules += n;
+  list.push((s.href ? s.href.split('/').pop() : '(inline)') + ':' + n);
+  if (s.href && s.href.indexOf('style.css') >= 0 && n > 150) cssFound = true;
+}
+
+put('kvCss', [
+  ['样式表数量', String(document.styleSheets.length)],
+  ['规则总数', String(rules), rules > 150 ? 'ok' : 'bad'],
+  ['style.css 已加载', cssFound ? '是' : '否（异常）', cssFound ? 'ok' : 'bad'],
+  ['明细', list.join(' | ')]
+]);
+
+// 6. 实测样式
+var optEl = document.querySelector('.opt'), letEl = document.querySelector('.letter');
+var os = getComputedStyle(optEl), ls = getComputedStyle(letEl);
+put('kvMeasure', [
+  ['.opt 边框宽度', os.borderTopWidth, parseFloat(os.borderTopWidth) > 0 ? 'ok' : 'bad'],
+  ['.opt 圆角', os.borderTopLeftRadius, parseFloat(os.borderTopLeftRadius) >= 8 ? 'ok' : 'bad'],
+  ['.opt display', os.display, os.display === 'flex' ? 'ok' : 'bad'],
+  ['.letter 宽度', ls.width, parseFloat(ls.width) >= 20 ? 'ok' : 'bad'],
+  ['.letter 背景', ls.backgroundColor, ls.backgroundColor !== 'rgba(0, 0, 0, 0)' ? 'ok' : 'bad'],
+  ['body 背景', getComputedStyle(document.body).backgroundColor]
+]);
+
+// 4. SW
+if (navigator.serviceWorker) {
+  navigator.serviceWorker.getRegistrations().then(function (rs) {
+    put('kvSw', [
+      ['SW 数量', String(rs.length), rs.length ? 'warn' : 'ok'],
+      ['明细', rs.map(function (r) {
+        return r.scope + ' [' + (r.active ? r.active.state : 'none') + ']';
+      }).join(' | ') || '无']
+    ]);
+  }).catch(function (e) { put('kvSw', [['查询失败', String(e), 'bad']]); });
+}
+if (window.caches) {
+  caches.keys().then(function (k) {
+    document.getElementById('preCache').textContent =
+      '缓存列表（' + k.length + ' 个）:\n' + (k.join('\n') || '(空)');
+  }).catch(function (e) {
+    document.getElementById('preCache').textContent = '读取失败: ' + e;
+  });
+}
+
+// 5. 视口
+var vv = window.visualViewport;
+put('kvVp', [
+  ['innerWidth x innerHeight', window.innerWidth + ' x ' + window.innerHeight],
+  ['devicePixelRatio', String(window.devicePixelRatio),
+      window.devicePixelRatio > 1.2 ? 'warn' : 'ok'],
+  ['outerWidth', String(window.outerWidth)],
+  ['visualViewport scale', vv ? String(vv.scale) : 'n/a'],
+  ['屏幕', screen.width + ' x ' + screen.height]
+]);
+</script>
+</body>
+</html>

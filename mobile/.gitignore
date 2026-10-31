@@ -1,0 +1,19 @@
+# 依赖
+node_modules/
+
+# 构建产物（由 prepare-www.js 生成，不入库）
+www/
+
+# iOS 工程里的同步资源（由 cap sync 生成）
+ios/App/App/public/
+ios/App/Pods/
+ios/App/App.xcworkspace/
+
+# Android
+android/app/src/main/assets/public/
+android/.gradle/
+android/build/
+
+# 系统
+.DS_Store
+*.log

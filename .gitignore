@@ -1,0 +1,55 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+build/
+dist/
+*.egg-info/
+
+# ---------- 数据库 ----------
+# 按用户要求已纳入版本管理（含账号与学习进度，仅私有仓库）
+# 仍排除运行时产生的临时文件
+quiz.db-wal
+quiz.db-shm
+quiz.db.broken
+*.db-journal
+
+# ---------- 运行期产物 ----------
+.appdata/
+.tmp/
+*.log
+
+# ---------- 第三方工具（体积大，按需自行下载） ----------
+cloudflared.exe
+cloudflared.exe.part
+
+# ---------- 抓取/解析的中间数据（体积大，可重新生成） ----------
+cache/
+.pdfwork/
+site/data/bank.json.bak
+site/data/bank.js.bak
+site/data/bank.json.pre_ocr
+site/data/*.full_backup
+.github_sources/
+
+# ---------- 系统 / 编辑器 ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+
+# 构建产物（由 scripts/build-single.js 生成，不入库）
+dist-single/
+
+
+# AI API Key（仅本机，绝不提交）
+ai_key.txt
+

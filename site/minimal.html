@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>选项布局终极版（表格布局）</title>
+<style>
+  body { margin: 0; padding: 20px; background: #f2f4f8;
+         font: 15px/1.7 "Microsoft YaHei", sans-serif; }
+
+  .report { max-width: 940px; margin: 0 auto 16px; background: #fffbe6;
+            border: 2px solid #f59e0b; border-radius: 12px; padding: 14px 18px;
+            font-family: Consolas, monospace; font-size: 13px; line-height: 1.9; }
+  .report h2 { font-size: 15px; margin: 0 0 10px; color: #92400e;
+               font-family: "Microsoft YaHei", sans-serif; }
+  .report b { color: #dc2626; }
+  .ok { color: #16a34a; font-weight: 700; }
+  .bad { color: #dc2626; font-weight: 700; }
+  .sep { border-top: 1px dashed #d4b06a; margin: 10px 0; }
+
+  .wrap { max-width: 900px; margin: 0 auto; background: #fff;
+          border: 1px solid #c5cddd; border-radius: 14px; padding: 18px 20px; }
+
+  h1 { font-size: 17px; margin: 0 0 6px; }
+  .tip { font-size: 12.5px; color: #666; margin: 0 0 14px; }
+
+  /* ===== 表格布局：最原始、最稳，不依赖 flex/grid ===== */
+  .opt-table { width: 100%; border-collapse: separate; border-spacing: 0 9px;
+               table-layout: fixed; }
+
+  .opt-table td { vertical-align: top; }
+
+  .letter-cell { width: 24px; padding: 0 !important; }
+
+  .letter-box { display: block; width: 24px; height: 24px; line-height: 24px;
+                text-align: center; border-radius: 7px;
+                background: #d8dfec; color: #46506a;
+                font-size: 12.5px; font-weight: 700; margin-top: 11px; }
+
+  .text-cell { background: #fff; border: 1.5px solid #c5cddd;
+               border-radius: 11px; padding: 10px 13px;
+               font-size: 14.5px; line-height: 1.7; color: #1c2333;
+               word-break: break-word; }
+</style>
+</head>
+<body>
+
+<div class="report">
+  <h2>📋 测量报告（把这整块截图发我）</h2>
+  <div id="out">测量中…</div>
+</div>
+
+<div class="wrap">
+  <h1>选项布局终极版（表格布局）</h1>
+  <p class="tip">
+    本页用 <b>&lt;table&gt;</b> 布局，不依赖 flex、不依赖 grid、不依赖任何外部 CSS。
+    表格布局从 1996 年支持至今，任何浏览器都不会错乱。<br>
+    正确效果：每行 = 左侧灰底 A/B/C/D 小方块 + 右侧带边框的文字卡片，整体宽度不超出白色区域。
+  </p>
+
+  <table class="opt-table" id="optTable">
+    <tr>
+      <td class="letter-cell"><span class="letter-box">A</span></td>
+      <td class="text-cell">社会消费品零售总额同比保持增长，体育娱乐用品、金银珠宝等部分升级类消费增速加快</td>
+    </tr>
+    <tr>
+      <td class="letter-cell"><span class="letter-box">B</span></td>
+      <td class="text-cell">我国与非美市场的贸易额和去年基本持平，特别是与欧盟地区的贸易，有效稳定了我国外贸的基本盘</td>
+    </tr>
+    <tr>
+      <td class="letter-cell"><span class="letter-box">C</span></td>
+      <td class="text-cell">上半年，内需对国内生产总值增长的贡献率达68.8%，显示出国内大循环的主体地位稳固、内生动力日益增强</td>
+    </tr>
+    <tr>
+      <td class="letter-cell"><span class="letter-box">D</span></td>
+      <td class="text-cell">世界银行6月发布的《全球经济展望》将2025年全球经济增速预期下调为2.3%，而上半年我国经济增长5.3%</td>
+    </tr>
+  </table>
+</div>
+
+<script>
+function box(el) {
+  if (!el) return '<span class="bad">不存在</span>';
+  var r = el.getBoundingClientRect();
+  return '宽<b>' + Math.round(r.width) + '</b> x=<b>' + Math.round(r.x) + '</b>';
+}
+
+setTimeout(function () {
+  var rows = [];
+  var table = document.getElementById('optTable');
+  var wrap = document.querySelector('.wrap');
+  var td = document.querySelector('.text-cell');
+  var lb = document.querySelector('.letter-box');
+
+  rows.push('<b>【环境】</b>');
+  rows.push('视口 <b>' + window.innerWidth + '</b>×' + window.innerHeight +
+            ' | DPR <b>' + window.devicePixelRatio + '</b>');
+  rows.push('缩放 scale: <b>' + (window.visualViewport ? window.visualViewport.scale : 'n/a') + '</b>');
+  rows.push('渲染模式: <b>' + (document.compatMode === 'BackCompat' ? '怪异模式' : '标准模式') + '</b>' +
+            (document.compatMode === 'BackCompat'
+              ? ' <span class="bad">✗ 怪异模式会让布局失效</span>'
+              : ' <span class="ok">✓</span>'));
+
+  rows.push('<div class="sep"></div>');
+  rows.push('<b>【尺寸】</b>');
+  rows.push('白色卡片 .wrap: ' + box(wrap));
+  rows.push('表格 table: ' + box(table));
+  rows.push('文字卡片 .text-cell: ' + box(td));
+  rows.push('字母方块 .letter-box: ' + box(lb));
+
+  rows.push('<div class="sep"></div>');
+  rows.push('<b>【结论】</b>');
+
+  if (td && wrap) {
+    var tw = td.getBoundingClientRect().width;
+    var ww = wrap.getBoundingClientRect().width;
+    if (tw > ww)
+      rows.push('<span class="bad">✗ 仍然溢出（' + Math.round(tw) + ' &gt; ' + Math.round(ww) + '）</span>');
+    else
+      rows.push('<span class="ok">✓ 宽度正常（' + Math.round(tw) + ' ≤ ' + Math.round(ww) + '）</span>');
+  }
+  if (lb) {
+    var lw = lb.getBoundingClientRect().width;
+    if (lw < 20)
+      rows.push('<span class="bad">✗ 字母方块被压扁：' + Math.round(lw) + 'px</span>');
+    else
+      rows.push('<span class="ok">✓ 字母方块正常：' + Math.round(lw) + 'px</span>');
+  }
+
+  document.getElementById('out').innerHTML = rows.join('<br>');
+}, 300);
+</script>
+</body>
+</html>

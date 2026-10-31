@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-app-ver="v5.0">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>行测刷题 · 分类真题</title>
+
+<!-- ===== 内联兜底样式 =====
+    作用：即使 style.css 加载失败（缓存损坏/网络异常），
+    答题页的选项也不会撑破布局，保证基本可读可用。
+    这些规则与 style.css 的关键布局一致，正常加载时被其覆盖。 -->
+<style>
+  .options { display: block; width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0; }
+  .opt {
+    display: flex; gap: 11px; align-items: flex-start; text-align: left;
+    width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0;
+    border: 1.5px solid #c5cddd; background: #fff; border-radius: 11px; padding: 10px 13px;
+    font: inherit; font-size: 14.5px; line-height: 1.7; color: inherit; cursor: pointer;
+  }
+  .opt .letter {
+    flex: 0 0 24px; width: 24px; height: 24px; border-radius: 7px;
+    background: #d8dfec; color: #46506a; display: grid; place-items: center;
+    font-size: 12.5px; font-weight: 700; margin-top: 1px; box-sizing: border-box;
+  }
+  .opt .txt { flex: 1; min-width: 0; word-break: break-word; }
+  .view { max-width: 1080px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+</style>
+
+<script>
+/* ===== 一次性自毁：注销 Service Worker + 清空所有缓存 =====
+ * 背景：SW v1 用 stale-while-revalidate 缓存了旧 app.js，
+ * 导致代码更新后页面仍跑旧版，且 Ctrl+F5 无法绕过。
+ * 这段脚本只需执行一次（成功后写标记），之后不再触发。
+ */
+(function () {
+  // 版本指纹：本段逻辑每次改动都要改这个值。
+  // 目的：即使旧 SW 缓存了旧 index.html，也能通过「无缓存脚本」纠正。
+  var FLAG = 'zlfx.cacheReset.v4';
+  var VERSION = 'v3.6';
+
+  function doReset() {
+    var tasks = [];
+
+    // 1) 注销所有 Service Worker
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+      tasks.push(
+        navigator.serviceWorker.getRegistrations().then(function (rs) {
+          return Promise.all(rs.map(function (r) { return r.unregister(); }));
+        }).catch(function () {})
+      );
+    }
+
+    // 2) 删除所有 Cache Storage
+    if (window.caches && caches.keys) {
+      tasks.push(
+        caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        }).catch(function () {})
+      );
+    }
+
+    // 3) 清掉可能残留的 localStorage 版本标记（保留登录 token）
+    try {
+      localStorage.removeItem('zlfx.pageVer');
+      localStorage.removeItem('zlfx.port');
+      localStorage.removeItem('zlfx.cacheReset.v1');
+      localStorage.removeItem('zlfx.cacheReset.v2');
+      localStorage.removeItem('zlfx.cacheReset.v3');
+    } catch (e) {}
+
+    return Promise.all(tasks);
+  }
+
+  // 判断是否需要清理：标记不是当前版本，就清一次
+  var done = false;
+  try { done = localStorage.getItem(FLAG) === VERSION; } catch (e) {}
+
+  if (!done) {
+    // 先展示提示，避免用户以为卡住
+    document.addEventListener('DOMContentLoaded', function () {
+      var tip = document.createElement('div');
+      tip.style.cssText = 'position:fixed;inset:0;background:#1b1f3b;color:#fff;' +
+        'display:flex;align-items:center;justify-content:center;flex-direction:column;' +
+        'gap:14px;z-index:99999;font:15px/1.6 system-ui,sans-serif';
+      tip.innerHTML = '<div style="font-size:34px">🧹</div>' +
+        '<div>正在清理旧缓存…</div>' +
+        '<div style="font-size:12.5px;color:#9aa6c6">完成后会自动刷新</div>';
+      document.body.appendChild(tip);
+    });
+
+    doReset().then(function () {
+      try { localStorage.setItem(FLAG, VERSION); } catch (e) {}
+      // 加时间戳强刷，绕过任何中间缓存
+      var u = location.href.split('#')[0];
+      var sep = u.indexOf('?') >= 0 ? '&' : '?';
+      location.replace(u + sep + '_r=' + Date.now() + location.hash);
+    }).catch(function () {
+      // 失败也标记，避免死循环
+      try { localStorage.setItem(FLAG, VERSION); } catch (e) {}
+    });
+  }
+})();
+</script>
+
+<!-- ===== 外部兜底：不参与 SW 预缓存的自清理脚本 =====
+     背景：如果旧 Service Worker 缓存了旧 index.html，
+     里面那段清理逻辑永远不会更新（死循环）。
+     因此把清理动作放到一个「文件名固定、内容带版本」的独立脚本，
+     并通过查询参数强制不使用缓存。 -->
+<script src="assets/selfheal.js?t=50"></script>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#4f46e5" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="application-name" content="行测刷题" />
+<meta name="apple-mobile-web-app-title" content="行测刷题" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="format-detection" content="telephone=no" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<link rel="stylesheet" href="assets/style.css?v=2e53424319" />
+</head>
+<body>
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">测</div>
+      <div class="brand-txt">
+        <strong>行测刷题</strong>
+        <span id="brandSub">分类真题</span>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="#/home" data-route="home"><i>▤</i><span>首页</span></a>
+      <a href="#/cats" data-route="cats"><i>◈</i><span>分类刷题</span></a>
+      
+      <a href="#/wrong" data-route="wrong"><i>✦</i><span>错题本</span><b class="badge" id="badgeWrong">0</b></a>
+      <a href="#/fav" data-route="fav"><i>★</i><span>我的收藏</span><b class="badge" id="badgeFav">0</b></a>
+      <a href="#/search" data-route="search"><i>⌕</i><span>题库速查</span></a>
+      <a href="#/stats" data-route="stats"><i>◔</i><span>学习统计</span></a>
+      <a href="#/news" data-route="news"><i>📰</i><span>时政资讯</span></a>
+      <a href="#/shenlun" data-route="shenlun"><i>✎</i><span>申论批改</span></a>
+      <a href="#/cidian" data-route="cidian"><i>📖</i><span>常考词汇</span></a>
+      <a href="#/fanwen" data-route="fanwen"><i>📄</i><span>申论范文</span></a>
+      <a href="#/papers" data-route="papers"><i>📄</i><span>真题套卷</span></a>
+      <a href="#/law" data-route="law"><i>⚖</i><span>法律专业</span></a>
+      <a href="#/import" data-route="import"><i>⇪</i><span>题库管理</span></a>
+    </nav>
+    <div class="side-foot">
+      <div class="user-chip" id="userChip"></div>
+      <button class="ghost" id="btnTheme">🌗 深色</button>
+      <div class="tiny" id="sideProgress">—</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn only-mobile" id="btnMenu">☰</button>
+      <div class="crumb" id="crumb">首页</div>
+      <div class="top-actions">
+        <span class="timer hidden" id="timer">0:00</span>
+        <button class="icon-btn" id="btnHelp" title="快捷键与帮助">?</button>
+      </div>
+    </header>
+    <div class="view" id="view"></div>
+  </main>
+</div>
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet hidden" id="sheet">
+  <div class="sheet-box">
+    <button class="sheet-x" id="sheetClose">×</button>
+    <div id="sheetBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="port-hint hidden" id="portHint"></div>
+
+<script>
+/* 布局诊断：双击页面任意处，弹出关键渲染数据，用于定位“选项错位”问题 */
+(function () {
+  function diag() {
+    var out = [];
+    function rect(sel, label) {
+      var el = document.querySelector(sel);
+      if (!el) { out.push(label + ': 不存在'); return; }
+      var r = el.getBoundingClientRect();
+      out.push(label + ': x=' + Math.round(r.left) + ' y=' + Math.round(r.top) +
+        ' w=' + Math.round(r.width) + ' h=' + Math.round(r.height));
+    }
+    out.push('innerWidth=' + window.innerWidth + ' innerHeight=' + window.innerHeight +
+      ' dpr=' + window.devicePixelRatio);
+    out.push('scrollW=' + document.documentElement.scrollWidth + ' bodyW=' + document.body.scrollWidth);
+    rect('.practice', '.practice');
+    rect('.q-card', '.q-card');
+    rect('.q-body', '.q-body');
+    rect('.options', '.options');
+    rect('.opt', '第一个.opt');
+    rect('.side-panel', '.side-panel');
+    var o = document.querySelector('.options');
+    var q = document.querySelector('.q-card');
+    if (o && q) {
+      out.push('options在q-card内: ' + q.contains(o));
+      var cs = getComputedStyle(q);
+      out.push('q-card display=' + cs.display + ' width=' + cs.width);
+      var co = getComputedStyle(o);
+      out.push('options display=' + co.display + ' flexDir=' + co.flexDirection + ' width=' + co.width);
+    }
+    var hint = document.getElementById('portHint');
+    if (hint) {
+      hint.textContent = out.join(' ｜ ');
+      hint.classList.remove('hidden');
+      hint.style.background = '#0f9d63';
+      hint.style.whiteSpace = 'pre-wrap';
+      hint.style.maxWidth = '92vw';
+      hint.style.top = '60px';
+      setTimeout(function () { hint.classList.add('hidden'); hint.style.background = ''; hint.style.top = ''; }, 20000);
+    } else {
+      alert(out.join('\n'));
+    }
+  }
+  document.addEventListener('dblclick', function(e) {
+    // 忽略在可交互元素上的双击（按钮/链接/选项/展开收起等），避免误触发诊断
+    if (e.target.closest('button, a, input, select, textarea, .opt, .explain-h, .material-h, label')) return;
+    diag();
+  });
+})();
+</script>
+
+<script>
+/* 版本 + 端口探测：页面被缓存或换了端口时提示，避免账号“丢失”的错觉 */
+(function () {
+  var VER = 'v6.7';
+  window.__APP_VER__ = VER;   // 供 selfheal.js 读取
+  var KEY = 'zlfx.pageVer';
+  var PORT_KEY = 'zlfx.port';
+  try {
+    var prev = localStorage.getItem(KEY);
+    var curPort = location.port || '80';
+    var prevPort = localStorage.getItem(PORT_KEY);
+
+    var tips = [];
+    if (prev && prev !== VER) tips.push('检测到新版本，请按 Ctrl+F5 强制刷新');
+    if (prevPort && prevPort !== curPort) {
+      tips.push('端口从 ' + prevPort + ' 换到了 ' + curPort +
+        '，之前注册的账号在 ' + prevPort + ' 上（浏览器按端口隔离存储）');
+    }
+    if (tips.length) {
+      setTimeout(function () {
+        var hint = document.getElementById('portHint');
+        if (hint) {
+          hint.textContent = tips.join('；');
+          hint.classList.remove('hidden');
+          setTimeout(function () { hint.classList.add('hidden'); }, 12000);
+        }
+      }, 1200);
+    }
+    localStorage.setItem(KEY, VER);
+    localStorage.setItem(PORT_KEY, curPort);
+  } catch (e) { /* 隐私模式忽略 */ }
+})();
+</script>
+
+<script src="data/zhenti.js?v=c7187a9c8a"></script>
+<script src="data/news.js?v=4e2c1283c0"></script>
+<script src="data/shenlun.js?v=5f730911fa"></script>
+<script src="data/shenlun-2025-2026.js?v=b41e15e548"></script>
+<script src="data/cidian-mined.js?v=d5ce5b1799"></script>
+<script src="data/cidian-curated.js?v=180bae6cef"></script>
+<script src="data/fanwen-curated.js?v=9a373b2b6b"></script>
+<script src="data/fanwen-curated-ext.js?v=c4ec2b02b5"></script>
+<script src="data/fanwen-curated-ext2.js?v=597be38c03"></script>
+<script src="data/fanwen-curated-ext3.js?v=647c185b63"></script>
+<script src="data/fanwen-curated-ext4.js?v=e7054cae29"></script>
+<script src="data/fanwen-bingwen.js?v=5eb79cd779"></script>
+<script src="data/fanwen-duojie.js?v=a8d4390a36"></script>
+<!-- data/fanwen-mined.js（2.3MB）改为按需加载，见 assets/fanwen.js -->
+<script src="assets/api.js?v=db45f24975"></script>
+<script src="assets/zhenti-v5.js?build=v5"></script>
+<script src="assets/news.js?v=356bb74597"></script>
+<script src="assets/shenlun.js?v=c622633695"></script>
+<script src="assets/cidian.js?v=268523a702"></script>
+<script src="assets/fanwen.js?v=382f46fa70"></script>
+<script src="assets/law-v5.js?build=v5"></script>
+<script src="assets/papers-v5.js?build=v5"></script>
+<script src="assets/app.js?v=33e2dcdf2e"></script>
+<script src="assets/layoutfix.js?build=v52"></script>
+
+<script>
+/* PWA：注册 Service Worker + 安装到桌面/主屏幕 */
+(function () {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function () {});
+    });
+  }
+
+  var deferred = null;
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferred = e;
+    showInstallBtn();
+  });
+
+  function showInstallBtn() {
+    if (document.getElementById('pwaInstall')) return;
+    var bar = document.createElement('div');
+    bar.id = 'pwaInstall';
+    bar.innerHTML = '<span>安装到设备，像 App 一样使用</span>' +
+      '<button id="pwaInstallBtn">立即安装</button>' +
+      '<button id="pwaInstallClose" title="关闭">×</button>';
+    document.body.appendChild(bar);
+
+    document.getElementById('pwaInstallBtn').onclick = function () {
+      if (!deferred) return;
+      deferred.prompt();
+      deferred.userChoice.then(function () { deferred = null; bar.remove(); });
+    };
+    document.getElementById('pwaInstallClose').onclick = function () {
+      bar.remove();
+      try { localStorage.setItem('pwaInstallDismissed', '1'); } catch (e) {}
+    };
+  }
+
+  // iOS Safari 不支持 beforeinstallprompt，给出「添加到主屏幕」指引
+  window.addEventListener('load', function () {
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    var standalone = window.navigator.standalone === true;
+    var dismissed = false;
+    try { dismissed = localStorage.getItem('pwaInstallDismissed') === '1'; } catch (e) {}
+    if (isIOS && !standalone && !dismissed) {
+      setTimeout(function () {
+        if (document.getElementById('pwaInstall')) return;
+        var bar = document.createElement('div');
+        bar.id = 'pwaInstall';
+        bar.innerHTML = '<span>点下方分享按钮 →「添加到主屏幕」即可当 App 用</span>' +
+          '<button id="pwaInstallClose" title="关闭">×</button>';
+        document.body.appendChild(bar);
+        document.getElementById('pwaInstallClose').onclick = function () { bar.remove(); };
+      }, 2500);
+    }
+  });
+})();
+</script>
+</body>
+</html>
