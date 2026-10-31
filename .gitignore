@@ -53,3 +53,14 @@ dist-single/
 # AI API Key（仅本机，绝不提交）
 ai_key.txt
 
+
+# ═══ 密钥保护（绝对不要提交）═══
+ai_key.txt
+ai_key*.txt
+*api_key*
+*apikey*
+.env
+.env.local
+.env.*.local
+secrets.json
+*.secret
