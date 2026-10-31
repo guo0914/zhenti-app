@@ -23,6 +23,23 @@
     try { return localStorage.getItem(LS_KEY) || ''; }
     catch (e) { return ''; }
   }
+
+  /** 构造 AI 请求头：带上用户自己的 Key */
+  function buildAIHeaders() {
+    var h = { 'Content-Type': 'application/json' };
+    var k = getApiKey().trim();
+    if (k) h['X-User-Api-Key'] = k;
+    return h;
+  }
+
+  /** 未填 Key 时抛出可读错误 */
+  function requireApiKey() {
+    var k = getApiKey().trim();
+    if (!k) {
+      throw new Error('请先在「⚙ 设置」里填入你的 DeepSeek API Key（platform.deepseek.com 免费申请）');
+    }
+    return k;
+  }
   function setApiKey(k) { try { localStorage.setItem(LS_KEY, k); } catch (e) {} }
 
   function getAnswers() { try { return JSON.parse(localStorage.getItem(LS_ANSWERS) || '{}'); } catch (e) { return {}; } }
@@ -335,7 +352,7 @@
      OCR —— 图片文字识别
      ═══════════════════════════════════ */
   async function runOCR(q, pics) {
-    // API Key 由服务器端注入，前端无需检查
+    requireApiKey();   // 未填 Key 时报错
 
     const imageContents = pics.map(b64 => ({
       type: 'image_url',
@@ -344,7 +361,7 @@
 
     const resp = await fetch(AI_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildAIHeaders(),
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: [{
@@ -380,7 +397,7 @@
      AI 批改引擎（含图片）
      ═══════════════════════════════════ */
   async function gradeEssay(q, answerText, pics) {
-    // API Key 由服务器端注入，前端无需检查
+    requireApiKey();   // 未填 Key 时报错
 
     const promptText = buildPrompt(q, answerText);
     let userContent;
@@ -396,7 +413,7 @@
 
     const resp = await fetch(AI_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildAIHeaders(),
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: [
@@ -451,14 +468,31 @@
     overlay.innerHTML = `<div class="card pad" style="max-width:460px;width:90%;max-height:80vh;overflow:auto">
       <h2 style="margin-top:0">⚙ 申论批改设置</h2>
       <label style="display:block;margin-bottom:4px;font-weight:600">DeepSeek API Key</label>
-      <div style="padding:8px 0;font-size:13px;color:var(--text-2,#5a6478)">AI 批改由服务器统一提供，无需填写 API Key。如提示「服务器未配置」，请联系站点管理员。</div>
-      <p class="tiny" style="margin:6px 0 12px 0">Key 仅保存在浏览器本地，不上传到任何服务器。OCR 识别和批改均消耗 token。</p>
+      <input type="password" id="slApiKey"
+        style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid var(--line,#c5cddd);border-radius:8px;font-size:13px"
+        value="${esc(getApiKey())}" placeholder="sk-xxxxxxxxxxxxxxxx">
+      <p class="tiny" style="margin:6px 0 4px 0">
+        在 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">platform.deepseek.com</a>
+        申请（约 ¥1 起充）。Key 只保存在你自己的设备上，不会上传。
+      </p>
+      <p class="tiny" style="margin:0 0 12px 0;color:var(--text-3,#8b94a8)">
+        OCR 识别与批改会消耗你账户的 token。
+      </p>
       <div class="row" style="gap:8px">
         <button class="btn primary" id="btnSaveSettings">保存</button>
         <button class="btn" id="btnCloseSettings">取消</button>
       </div></div>`;
     document.body.appendChild(overlay);
-    overlay.querySelector('#btnSaveSettings').onclick = () => { setApiKey(overlay.querySelector('#slApiKey').value.trim()); overlay.remove(); window.toast ? window.toast('API Key 已保存') : alert('已保存'); };
+    overlay.querySelector('#btnSaveSettings').onclick = () => {
+      var v = (overlay.querySelector('#slApiKey').value || '').trim();
+      if (v && !/^[\w-]{8,}$/.test(v)) {
+        alert('Key 格式不正确，应以 sk- 开头且无空格');
+        return;
+      }
+      setApiKey(v);
+      overlay.remove();
+      window.toast ? window.toast(v ? 'API Key 已保存' : '已清空 API Key') : alert('已保存');
+    };
     overlay.querySelector('#btnCloseSettings').onclick = () => overlay.remove();
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
   };

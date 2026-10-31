@@ -483,7 +483,8 @@ class Handler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin") or "*"
         self.send_header("Access-Control-Allow-Origin", origin)
         self.send_header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With")
+        self.send_header("Access-Control-Allow-Headers",
+                         "Content-Type,Authorization,X-Requested-With,X-User-Api-Key")
         self.send_header("Access-Control-Allow-Credentials", "true")
         self.send_header("Access-Control-Max-Age", "86400")
         self.send_header("Vary", "Origin")
@@ -641,14 +642,25 @@ class Handler(BaseHTTPRequestHandler):
         这里补上 Authorization 头再转发，把响应原样返回。
         key 只存在服务器上，开源后也不会泄漏。
         """
-        if not DEEPSEEK_API_KEY:
+        # 优先使用用户自带的 Key（前端通过 X-User-Api-Key 传入）
+        # 服务器不保存它，只用于本次转发
+        user_key = ""
+        try:
+            user_key = (self.headers.get("X-User-Api-Key") or "").strip()
+        except Exception:
+            user_key = ""
+
+        active_key = user_key or DEEPSEEK_API_KEY
+        if not active_key:
             self.json({
                 "error": {
-                    "message": "服务器未配置 AI Key。管理员请设置环境变量 "
-                               "DEEPSEEK_API_KEY，或在项目目录放 ai_key.txt。"
+                    "message": "未设置 API Key。请在申论批改的设置里填入你自己的 "
+                               "DeepSeek API Key（在 platform.deepseek.com 申请）。"
                 }
             }, status=503)
             return
+        if not user_key and not DEEPSEEK_API_KEY:
+            active_key = ""
 
         try:
             body = self.read_json()
@@ -670,7 +682,7 @@ class Handler(BaseHTTPRequestHandler):
             data=payload,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": "Bearer " + DEEPSEEK_API_KEY,
+                "Authorization": "Bearer " + active_key,
             },
             method="POST",
         )
@@ -728,7 +740,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.api_ai_chat()
         if route == "ai/status" and method == "GET":
             return self.json({
-                "configured": bool(DEEPSEEK_API_KEY),
+                "serverKey": bool(DEEPSEEK_API_KEY),
+                "needUserKey": not bool(DEEPSEEK_API_KEY),
                 "model": "deepseek-chat",
             })
 
