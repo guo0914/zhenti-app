@@ -32,6 +32,106 @@
     return h;
   }
 
+  /* ═══════════════ 用量统计 ═══════════════ */
+  const LS_USAGE = 'zlfx.shenlun.usage';
+
+  function getUsage() {
+    try {
+      var u = JSON.parse(localStorage.getItem(LS_USAGE) || '{}');
+      return {
+        prompt: u.prompt || 0,
+        completion: u.completion || 0,
+        calls: u.calls || 0,
+        lastAt: u.lastAt || 0
+      };
+    } catch (e) { return { prompt: 0, completion: 0, calls: 0, lastAt: 0 }; }
+  }
+
+  function addUsage(usage) {
+    if (!usage) return;
+    var u = getUsage();
+    u.prompt += usage.prompt_tokens || 0;
+    u.completion += usage.completion_tokens || 0;
+    u.calls += 1;
+    u.lastAt = Date.now();
+    try { localStorage.setItem(LS_USAGE, JSON.stringify(u)); } catch (e) {}
+  }
+
+  function resetUsage() {
+    try { localStorage.removeItem(LS_USAGE); } catch (e) {}
+  }
+
+  /* ═══════════════ 友好错误 ═══════════════ */
+  function friendlyAIError(status, serverMsg) {
+    // 优先用中文映射；DeepSeek 的英文原文做补充说明
+    var m = (serverMsg || '').toLowerCase();
+    if (status === 401 || m.indexOf('authentication') >= 0 || m.indexOf('invalid') >= 0) {
+      return 'API Key 无效。请检查是否复制完整，或去 platform.deepseek.com 重新生成';
+    }
+    if (status === 402 || m.indexOf('insufficient') >= 0 || m.indexOf('balance') >= 0) {
+      return 'DeepSeek 账户余额不足。请充值后再用 AI 批改';
+    }
+    if (status === 429 || m.indexOf('rate limit') >= 0) {
+      return '请求太频繁被限流，等 1 分钟再试';
+    }
+    if (serverMsg && serverMsg.length > 8) return serverMsg;
+    var MAP = {
+      401: 'API Key 无效或已失效。请检查是否填对，或去 platform.deepseek.com 重新生成',
+      402: 'DeepSeek 账户余额不足，请充值后再用 AI 批改',
+      403: 'API Key 无权限访问该模型',
+      429: '请求太频繁被限流，等 1 分钟再试',
+      500: 'DeepSeek 服务器出错，稍后重试',
+      502: '无法连接 DeepSeek，请检查网络',
+      503: '服务不可用（可能未配置 Key 或 DeepSeek 下线）',
+      504: '请求超时，可能图片太大或网络慢'
+    };
+    return MAP[status] || ('请求失败（HTTP ' + status + '）');
+  }
+
+  /** 设置页里的用量统计块 */
+  function usageBox() {
+    var u = getUsage();
+    var total = u.prompt + u.completion;
+    if (!u.calls) {
+      return '<div class="tiny" style="margin-top:14px;padding-top:12px;' +
+        'border-top:1px dashed var(--line,#e5e7eb);color:var(--text-3,#8b94a8)">' +
+        '尚无调用记录</div>';
+    }
+    var last = u.lastAt ? new Date(u.lastAt).toLocaleString('zh-CN',
+      { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+    return '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line,#e5e7eb)">' +
+      '<div class="tiny" style="font-weight:600;margin-bottom:6px">📊 本次设备用量</div>' +
+      '<div class="tiny" style="line-height:1.9">' +
+      '调用 <b>' + u.calls + '</b> 次　·　消耗 <b>' + total + '</b> tokens' +
+      '　（输入 ' + u.prompt + ' / 输出 ' + u.completion + '）<br>' +
+      '最近一次：' + last +
+      '</div>' +
+      '<button class="btn sm" id="btnResetUsage" style="margin-top:8px">清零统计</button>' +
+      '</div>';
+  }
+
+  /** 测试当前 Key 是否可用 */
+  async function testCurrentKey(cb) {
+    var k = getApiKey().trim();
+    if (!k) { cb({ ok: false, msg: '还没填 Key' }); return; }
+    try {
+      var resp = await fetch(AI_ENDPOINT, {
+        method: 'POST',
+        headers: buildAIHeaders(),
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [{ role: 'user', content: 'ping' }],
+          max_tokens: 3
+        })
+      });
+      if (resp.ok) { cb({ ok: true, msg: 'Key 可用' }); return; }
+      var d = await resp.json().catch(function () { return {}; });
+      cb({ ok: false, msg: friendlyAIError(resp.status, (d.error || {}).message) });
+    } catch (e) {
+      cb({ ok: false, msg: '网络错误：' + (e.message || e) });
+    }
+  }
+
   /** 未填 Key 时抛出可读错误 */
   function requireApiKey() {
     var k = getApiKey().trim();
@@ -387,9 +487,10 @@
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error?.message || `OCR 错误 ${resp.status}`);
+      throw new Error(friendlyAIError(resp.status, (err.error || {}).message));
     }
     const data = await resp.json();
+    addUsage(data.usage);
     return (data.choices?.[0]?.message?.content || '').trim();
   }
 
@@ -427,10 +528,11 @@
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error?.message || `API 错误 ${resp.status}`);
+      throw new Error(friendlyAIError(resp.status, (err.error || {}).message));
     }
 
     const data = await resp.json();
+    addUsage(data.usage);
     const content = data.choices?.[0]?.message?.content || '';
     const tokens = data.usage?.total_tokens || 0;
     const scoreMatch = content.match(/(?:总分|综合得分|得分)[：:]\s*(\d+)/) || content.match(/[（(](\d+)\s*分[)）]/);
@@ -478,10 +580,14 @@
       <p class="tiny" style="margin:0 0 12px 0;color:var(--text-3,#8b94a8)">
         OCR 识别与批改会消耗你账户的 token。
       </p>
-      <div class="row" style="gap:8px">
+      <div id="slTestResult" class="tiny" style="margin:0 0 10px 0;min-height:18px"></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap">
         <button class="btn primary" id="btnSaveSettings">保存</button>
+        <button class="btn" id="btnTestKey">测试 Key</button>
         <button class="btn" id="btnCloseSettings">取消</button>
-      </div></div>`;
+      </div>
+      ${usageBox()}
+      </div>`;
     document.body.appendChild(overlay);
     overlay.querySelector('#btnSaveSettings').onclick = () => {
       var v = (overlay.querySelector('#slApiKey').value || '').trim();
@@ -493,6 +599,35 @@
       overlay.remove();
       window.toast ? window.toast(v ? 'API Key 已保存' : '已清空 API Key') : alert('已保存');
     };
+    var tk = overlay.querySelector('#btnTestKey');
+    if (tk) tk.onclick = function () {
+      var res = overlay.querySelector('#slTestResult');
+      var key = (overlay.querySelector('#slApiKey').value || '').trim();
+      if (!key) { res.innerHTML = '<span style="color:#dc2626">请先填入 Key</span>'; return; }
+      // 先临时保存再测试，测完保留（用户点保存才真正生效，但测试需要当前值）
+      res.innerHTML = '<span style="color:#d97706">测试中…</span>';
+      tk.disabled = true;
+      // 临时写入 localStorage 供 testCurrentKey 读取
+      var old = getApiKey();
+      setApiKey(key);
+      testCurrentKey(function (r) {
+        tk.disabled = false;
+        if (r.ok) {
+          res.innerHTML = '<span style="color:#16a34a">✓ ' + esc(r.msg) + '</span>';
+        } else {
+          res.innerHTML = '<span style="color:#dc2626">✗ ' + esc(r.msg) + '</span>';
+          setApiKey(old);   // 失败则回滚
+        }
+      });
+    };
+
+    var ru = overlay.querySelector('#btnResetUsage');
+    if (ru) ru.onclick = function () {
+      resetUsage();
+      var box = overlay.querySelector('#slTestResult');
+      if (box) box.innerHTML = '<span style="color:#16a34a">用量统计已清零</span>';
+    };
+
     overlay.querySelector('#btnCloseSettings').onclick = () => overlay.remove();
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
   };
