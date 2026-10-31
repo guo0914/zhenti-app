@@ -231,8 +231,9 @@
       '从第 1 题做到第 ' + p.total + ' 题，还原真实考试节奏。' +
       '交卷后出分模块成绩报告。</p>');
     html.push('  <div class="row" style="gap:8px;flex-wrap:wrap">');
+    var _wholeSec = examSeconds(p.total, true, p.kind, p.region);
     html.push('    <button class="btn primary" data-mode="timed">限时模拟（' +
-      Math.round(p.total * 0.9) + ' 分钟）</button>');
+      Math.round(_wholeSec / 60) + ' 分钟）</button>');
     html.push('    <button class="btn" data-mode="free">不限时（练习模式）</button>');
     html.push('  </div>');
     html.push('</div>');
@@ -421,14 +422,33 @@
     });
   }
 
+  /* 计算考试时长（秒）
+   * 整卷模拟：优先用官方时长（国考行测固定 120 分钟），
+   *           其他卷按题量 × 0.9 分钟估算；
+   * 分模块练习：按该模块题量 × 0.9 分钟。
+   * 按钮文案与实际倒计时都调用它，避免显示与倒计时不一致。 */
+  function examSeconds(poolLen, isWholePaper, kind, region) {
+    if (!poolLen) return 0;
+    if (isWholePaper) {
+      // 国考行测（kind 可能是 guokao 或 xingce，用 region 判断更可靠）：
+      // 无论 130 题还是 135 题，考试时间都是 120 分钟
+      if (kind === 'guokao' || region === '国考') return 120 * 60;
+      // 其他省考按 0.9 分/题，但不低于 100 分钟
+      return Math.max(100, Math.round(poolLen * 0.9)) * 60;
+    }
+    // 分模块：按模块题量
+    return Math.round(poolLen * 0.9 * 60);
+  }
+
   /* 答题会话 */
   function runSession(v, paperMeta, moduleCat, timed, pool) {
     var idx = 0;
     var answers = {};              // qid -> { sel:[], ok:bool }
     var startTs = Date.now();
-    // 限时：每题 0.9 分钟（54 秒）。真实国考 130 题 120 分钟 ≈ 0.92 分/题。
-    // 注意单位是「秒」，必须 ×60。
-    var limitSec = timed ? Math.round(pool.length * 0.9 * 60) : 0;
+    // 限时：统一走 examSeconds()，保证按钮显示与实际倒计时一致
+    var limitSec = timed
+      ? examSeconds(pool.length, !moduleCat, paperMeta && paperMeta.kind, paperMeta && paperMeta.region)
+      : 0;
     var timerId = null;
     var finished = false;
 

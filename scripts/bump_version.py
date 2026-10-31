@@ -43,7 +43,11 @@ def main():
     html = open(IDX, encoding="utf-8").read()
 
     # 匹配 src="assets/x.js?v=xxx" 与 href="assets/x.css?v=xxx"
-    pat = re.compile(r'((?:src|href)="((?:assets|data)/[^"?]+))(?:\?v=[a-zA-Z0-9]+)?(")')
+    # 同时匹配 ?v=xxx 与 ?build=v5 等任意查询串，
+    # 否则历史上写死的 ?build=v5 永远不会被更新（曾导致反复看到旧代码）
+    pat = re.compile(
+        r'((?:src|href)="((?:assets|data)/[^"?]+))(?:\?[^"]*)?(")'
+    )
 
     changes = []
 
