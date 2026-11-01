@@ -484,6 +484,8 @@
         '">' +
         opts.map(function (text, i) {
           var key = keys[i] || 'ABCD'[i];
+          // 选项本身是图片时（公式/图形/图表型选项），优先渲染图片
+          var optImg = (q.optionImgs || [])[i] || '';
           var isAns = String(q.answer || '').indexOf(key) >= 0;
           var picked = a && a.sel && a.sel.indexOf(key) >= 0;
           var bg = '#fff', bd = '#c5cddd', lbg = '#d8dfec', lfg = '#46506a';
@@ -491,6 +493,25 @@
             if (isAns) { bg = '#e7f8f0'; bd = '#37c98b'; lbg = '#37c98b'; lfg = '#fff'; }
             else if (picked) { bg = '#fdecef'; bd = '#e0405a'; lbg = '#e0405a'; lfg = '#fff'; }
           } else if (picked) { bg = '#eef0ff'; bd = '#4f46e5'; lbg = '#4f46e5'; lfg = '#fff'; }
+
+          // 选项内容：图片 > 文本 > 占位提示
+          var inner;
+          if (optImg) {
+            var isFormula = String(optImg).indexOf('公式图') >= 0;
+            inner = '<img src="' + esc(optImg) + '" alt="选项' + key + '"' +
+              ' loading="lazy"' +
+              ' onerror="this.style.display=\'none\'"' +
+              ' style="' + (isFormula
+                ? 'max-width:100%;height:auto;display:inline-block;vertical-align:middle'
+                : 'max-width:100%;height:auto;display:block;border-radius:6px') + '">';
+          } else if (String(text || '').indexOf('缺失') >= 0) {
+            inner = '<span style="color:#d97706;font-size:13px">⚠ 源数据缺失，无法作答</span>';
+          } else if (String(text || '').trim()) {
+            inner = esc(text);
+          } else {
+            inner = '<span style="color:var(--text-3,#8b94a8);font-size:13px">（源数据无此选项内容）</span>';
+          }
+
           return '<tr>' +
             '<td style="width:24px;padding:0;vertical-align:top;">' +
               '<span style="display:block;width:24px;height:24px;line-height:24px;' +
@@ -501,11 +522,7 @@
               'border:1.5px solid ' + bd + ';border-radius:11px;padding:10px 13px;' +
               'font-size:14.5px;line-height:1.7;color:#1c2333;cursor:pointer;' +
               'overflow-wrap:anywhere;word-break:break-word;">' +
-              (String(text || '').indexOf('缺失') >= 0
-                ? '<span style="color:#d97706;font-size:13px">⚠ 源数据缺失，无法作答</span>'
-                : (String(text || '').trim()
-                    ? esc(text)
-                    : '<span style="color:var(--text-3,#8b94a8);font-size:13px">（选项见上方原图）</span>')) +
+              inner +
               (show && isAns ? '<span style="float:right;font-size:11px;color:#16a34a;margin-left:8px;">✓</span>' : '') +
             '</td>' +
           '</tr>';
@@ -586,7 +603,7 @@
           if (!src) return;                       // 跳过空值
           var isFormula = String(src).indexOf('公式图') >= 0;
           var style = isFormula
-            ? 'height:auto;max-width:none;vertical-align:middle;display:inline-block;margin:2px'
+            ? 'height:auto;max-width:none;width:auto;vertical-align:middle;display:inline-block;margin:2px'
             : 'max-width:100%;height:auto;display:block;margin-bottom:10px';
           html.push('      <img src="' + esc(String(src)) + '" alt="材料图表"' +
             ' loading="lazy"' +
@@ -611,13 +628,17 @@
       if ((q.imgs || []).length) {
         var _imgs = q.imgs.filter(function (x) { return x; });
         if (_imgs.length) {
-          html.push('  <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">');
+          // 注意 align-items:flex-start：flex 列容器默认 stretch 会把
+          // 小尺寸公式图（15x33 像素）拉伸到整行宽，糊成一团黑块。
+          html.push('  <div style="margin-top:12px;display:flex;flex-direction:column;' +
+            'align-items:flex-start;gap:8px">');
           _imgs.forEach(function (src) {
             var isFormula = String(src).indexOf('公式图') >= 0;
             // 公式图是 15x33 这类小片段，放大就会糊；
-            // 按原始尺寸显示，不设 max-width:100%
+            // 按原始尺寸显示，并加 image-rendering 保证清晰
             var style = isFormula
-              ? 'height:auto;max-width:none;vertical-align:middle;display:inline-block;margin:2px'
+              ? 'height:auto;max-width:none;width:auto;vertical-align:middle;' +
+                'display:inline-block;margin:2px;align-self:flex-start'
               : 'max-width:100%;height:auto;border-radius:8px;' +
                 'border:1px solid var(--line,#e5e7eb)';
             html.push('    <img src="' + esc(String(src)) + '" alt="题目图"' +

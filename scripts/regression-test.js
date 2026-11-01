@@ -97,7 +97,7 @@ const checks = [
   ['q.imgs 渲染', /q\.imgs/],
   ['q.material 渲染', /q\.material/],
   ['materialImgs 渲染', /materialImgs/],
-  ['空选项占位', /选项见上方原图/],
+  ['选项图片渲染', /q\.optionImgs/],
   ['材料折叠', /btnMatToggle/],
   ['表格布局', /opt-table/],
 ];

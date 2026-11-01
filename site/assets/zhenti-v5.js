@@ -388,6 +388,8 @@
       <table class="opt-table" style="width:100%;max-width:100%;border-collapse:separate;border-spacing:0 9px;table-layout:fixed;box-sizing:border-box;margin:0;padding:0;">
         ${(q.options || []).map((text, i) => {
           const key = (q.optionKeys && q.optionKeys[i]) || 'ABCD'[i];
+          // 选项本身是图片时（公式/图形/图表型选项），优先渲染图片
+          const optImg = (q.optionImgs || [])[i] || '';
           const picked = a && a.sel === key;
           const isAns = q.answer === key;
           let bg = '#fff', bd = '#c5cddd', lbg = '#d8dfec', lfg = '#46506a';
@@ -405,7 +407,13 @@
                    border:1.5px solid ${bd};border-radius:11px;padding:10px 13px;
                    font-size:14.5px;line-height:1.7;color:#1c2333;
                    overflow-wrap:anywhere;word-break:break-word;
-                   cursor:pointer;">${esc(text || '（见原图）')}${
+                   cursor:pointer;">${optImg
+              ? `<img src="${esc(optImg)}" alt="选项${key}" loading="lazy"
+                     onerror="this.style.display='none'"
+                     style="${String(optImg).indexOf('公式图') >= 0
+                       ? 'max-width:100%;height:auto;display:inline-block;vertical-align:middle'
+                       : 'max-width:100%;height:auto;display:block;border-radius:6px'}">`
+              : esc(text || '（源数据无此选项内容）')}${
               show && isAns ? '<span style="float:right;font-size:11px;color:#16a34a;margin-left:8px;">✓</span>' : ''
             }</td>
           </tr>`;
