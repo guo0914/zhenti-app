@@ -61,6 +61,43 @@
     try { localStorage.removeItem(LS_USAGE); } catch (e) {}
   }
 
+  /* ═══════════════ 环境诊断 ═══════════════ */
+
+  /** 当前是否运行在 App 壳里（capacitor） */
+  function isAppShell() {
+    try {
+      var p = location.protocol;
+      return p === 'capacitor:' || p === 'ionic:' ||
+             (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    } catch (e) { return false; }
+  }
+
+  /** App 内是否已配置服务器地址 */
+  function hasServerBase() {
+    try {
+      var b = localStorage.getItem('zlfx.apiBase') || '';
+      if (!b && window.__API_BASE_GET__) b = window.__API_BASE_GET__() || '';
+      if (!b && window.__APP_CONFIG__ && window.__APP_CONFIG__.apiBase) {
+        b = window.__APP_CONFIG__.apiBase || '';
+      }
+      return !!b;
+    } catch (e) { return false; }
+  }
+
+  /** 网络失败时给出可操作的提示 */
+  function networkErrorMessage(err) {
+    var raw = (err && err.message) || String(err);
+    if (isAppShell() && !hasServerBase()) {
+      return '还没配置服务器地址。请到 App 首页的 ⚙ 设置，填写你的服务器地址' +
+             '（例如 https://你的隧道地址 或 http://电脑IP:8000），再回来试。';
+    }
+    if (isAppShell()) {
+      return '连不上服务器。请检查：① ⚙ 设置里的服务器地址是否正确；' +
+             '② 电脑上的程序是否在运行；③ 手机是否和电脑通网。\n原始错误：' + raw;
+    }
+    return '网络请求失败：' + raw;
+  }
+
   /* ═══════════════ 友好错误 ═══════════════ */
   function friendlyAIError(status, serverMsg) {
     // 优先用中文映射；DeepSeek 的英文原文做补充说明
@@ -128,7 +165,7 @@
       var d = await resp.json().catch(function () { return {}; });
       cb({ ok: false, msg: friendlyAIError(resp.status, (d.error || {}).message) });
     } catch (e) {
-      cb({ ok: false, msg: '网络错误：' + (e.message || e) });
+      cb({ ok: false, msg: networkErrorMessage(e) });
     }
   }
 
