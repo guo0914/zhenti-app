@@ -72,3 +72,6 @@ ai_key*
 
 # 数据修复备份
 site/data/zt/*.json.*bak*
+
+# 临时提交信息文件
+msg_*.txt
