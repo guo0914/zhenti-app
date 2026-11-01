@@ -446,8 +446,11 @@
     var answers = {};              // qid -> { sel:[], ok:bool }
     var startTs = Date.now();
     // 限时：统一走 examSeconds()，保证按钮显示与实际倒计时一致
+    // 注意：moduleCat 是 'all' 字符串（整卷）或具体模块名，
+    // 不能写成 !moduleCat —— !'all' 是 false，永远进不了整卷分支。
+    var _isWhole = (moduleCat === 'all');
     var limitSec = timed
-      ? examSeconds(pool.length, !moduleCat, paperMeta && paperMeta.kind, paperMeta && paperMeta.region)
+      ? examSeconds(pool.length, _isWhole, paperMeta && paperMeta.kind, paperMeta && paperMeta.region)
       : 0;
     var timerId = null;
     var finished = false;
