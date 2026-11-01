@@ -91,7 +91,9 @@
   };
 
   /* 状态：当前筛选 */
-  var filter = { year: 'all', region: 'all', grade: 'A' };
+  // 默认显示全部等级：B/C 级是「源数据不完整」的卷，
+  // 藏起来会让用户以为没有这些卷，改为默认全部显示并加不完整标记。
+  var filter = { year: 'all', region: 'all', grade: 'all' };
 
   function renderList(v, idx, papers) {
     var meta = idx.meta || {};
@@ -176,6 +178,10 @@
                  (p.subtype ? ' · ' + esc(p.subtype) : '') + '</span>',
           '      <span class="tiny">' + p.total + ' 题 · ' + p.moduleCount + ' 模块' +
                  (p.noGaps ? ' · 缺' + p.noGaps + '题' : '') + '</span>',
+          (p.coverage != null && p.coverage < 1
+            ? '      <span class="tiny" style="color:#d97706">⚠ 仅收录 ' +
+              Math.round(p.coverage * 100) + '%</span>'
+            : ''),
           done ? '      <span class="tiny" style="color:#16a34a">上次 ' + done.score + '/' + done.total + '</span>' : '',
           '    </div>',
           '    <div style="line-height:1.8">' + mods + '</div>',
@@ -220,6 +226,19 @@
       p.moduleCount + ' 模块</p></div>');
     html.push('  <button class="btn sm" id="backList">← 返回</button>');
     html.push('</div>');
+
+    // 源数据不完整提示（coverage < 1 表示网友回忆版缺题）
+    if (p.coverage != null && p.coverage < 1) {
+      var pct = Math.round(p.coverage * 100);
+      html.push('<div class="card pad" style="margin-bottom:14px;background:#fef3c7;' +
+        'border-left:4px solid #d97706">');
+      html.push('  <div style="font-size:13.5px;line-height:1.7;color:#92400e">');
+      html.push('    <b>⚠ 本卷题目不完整</b><br>');
+      html.push('    网友回忆版仅收录 ' + p.total + ' 题（完整度约 ' + pct + '%），' +
+        '部分题目在原始资料中就缺失，无法补全。');
+      html.push('  </div>');
+      html.push('</div>');
+    }
 
     // 完整模拟
     html.push('<div class="card pad" style="margin-bottom:14px;border-left:4px solid var(--brand)">');
