@@ -69,3 +69,6 @@ secrets.json
 ai_key*
 *apikey*
 
+
+# 数据修复备份
+site/data/zt/*.json.*bak*
