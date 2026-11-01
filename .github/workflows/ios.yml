@@ -12,10 +12,16 @@ name: Build iOS IPA
 #
 # 触发方式：
 #   · 手动：仓库页 → Actions → 选本 workflow → Run workflow
-#   · 自动：推送 mobile/ 或 site/ 的改动时
+#   · 自动：推送 site/ 或 mobile/ 的改动时（见下方 on.push.paths）
 
 'on':
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'mobile/**'
+      - '.github/workflows/ios.yml'
 
 jobs:
   build-ios:
