@@ -120,9 +120,9 @@ def explain_with_formulas(html_text: str) -> str:
         src = m.group(1)
         name = os.path.basename(src)
         if "公式图" in src:
-            tokens.append(("公式", "assets/zt/" + "公式图/" + name))
+            tokens.append(("公式", "assets/zt/formula/" + name))
         else:
-            tokens.append(("图", "assets/zt/" + "题目图/" + name))
+            tokens.append(("图", "assets/zt/timu/" + name))
         return "\u0000%d\u0000" % (len(tokens) - 1)
 
     tmp = EXPL_IMG.sub(repl, html_text)
@@ -145,12 +145,16 @@ def parse_front_matter(text: str) -> tuple[dict, str]:
 
 
 def rewrite_img(src: str) -> str:
-    """把仓库里的 ../90-图片/题目图/x.png 改成本地路径 assets/zt/题目图/x.png。"""
+    """把仓库里的 ../90-图片/题目图/x.png 改成本地路径 assets/zt/timu/x.png。
+
+    本地目录名是 ASCII（timu / formula），远程源仓库仍是中文目录，
+    所以判据看远程路径里的「题目图」「公式图」，输出写 ASCII 目录。
+    """
     name = os.path.basename(src)
     if "题目图" in src:
-        return "assets/zt/" + "题目图/" + name
+        return "assets/zt/timu/" + name
     if "公式图" in src:
-        return "assets/zt/" + "公式图/" + name
+        return "assets/zt/formula/" + name
     return src
 
 

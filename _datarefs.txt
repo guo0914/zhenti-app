@@ -1,0 +1,8 @@
+site\data\zt\common.json                         1032648 bytes  timu=75 formula=363
+site\data\zt\data.json                           1155575 bytes  timu=830 formula=2372
+site\data\zt\graph.json                           278615 bytes  timu=497 formula=44
+site\data\zt\guokao.json                         2243043 bytes  timu=545 formula=1414
+site\data\zt\judge.json                          1787360 bytes  timu=140 formula=919
+site\data\zt\politics.json                        507397 bytes  timu=0 formula=4
+site\data\zt\quantity.json                        664523 bytes  timu=164 formula=2297
+site\data\zt\verbal.json                         1921269 bytes  timu=24 formula=75

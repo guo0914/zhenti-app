@@ -57,9 +57,9 @@ def norm(s):
 def img_to_md(src):
     base = os.path.basename(src)
     if "公式图" in src:
-        return "\n![公式](assets/zt/公式图/%s)\n" % base
+        return "\n![公式](assets/zt/formula/%s)\n" % base
     if "题目图" in src:
-        return "\n![图](assets/zt/题目图/%s)\n" % base
+        return "\n![图](assets/zt/timu/%s)\n" % base
     return ""
 
 

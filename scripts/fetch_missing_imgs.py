@@ -28,9 +28,12 @@ BASE = "https://raw.githubusercontent.com/ERRRC/xingcezhenti/main/"
 MAGIC = (b"\x89PNG", b"\xff\xd8\xff", b"GIF8", b"RIFF")
 MD_IMG = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 
+# 远程仓库目录名（中文，不能改）→ 本地目录名（ASCII，iOS 打包必须）
+LOCAL_DIR = {"题目图": "timu", "公式图": "formula"}
+
 
 def collect():
-    """返回 [(kind, name)] 未去重的引用列表。"""
+    """返回 [(kind, name)] 未去重的引用列表。kind 是本地 ASCII 目录名。"""
     refs = set()
     for cat in CATS:
         fp = os.path.join(ZT, cat + ".json")
@@ -55,10 +58,10 @@ def collect():
             srcs.extend([m[1] for m in MD_IMG.findall(q.get("explain") or "")])
             for s in srcs:
                 s = str(s).replace("\\", "/")
-                if "题目图" in s:
-                    refs.add(("题目图", os.path.basename(s)))
-                elif "公式图" in s:
-                    refs.add(("公式图", os.path.basename(s)))
+                if "/timu/" in s or "题目图" in s:
+                    refs.add(("timu", os.path.basename(s)))
+                elif "/formula/" in s or "公式图" in s:
+                    refs.add(("formula", os.path.basename(s)))
     return sorted(refs)
 
 
@@ -76,7 +79,9 @@ def missing(refs):
 
 
 def fetch_one(kind, name, tries=3):
-    rel = "90-图片/%s/%s" % (kind, name)
+    # 远程仓库是中文目录，本地是 ASCII 目录
+    remote_kind = "题目图" if kind == "timu" else "公式图"
+    rel = "90-图片/%s/%s" % (remote_kind, name)
     url = BASE + urllib.parse.quote(rel)
     for attempt in range(tries):
         try:

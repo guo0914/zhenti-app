@@ -128,7 +128,7 @@
       const s = String(src || '');
       // 公式图是小符号（15×33 等），限制高度即可；题目图是整幅图形（如 600×268），
       // 若也套 .formula 会被 max-height:34px 压成一条线，必须按宽度自适应。
-      if (s.indexOf('公式图') >= 0) {
+      if (s.indexOf('/formula/') >= 0) {
         return `<img class="formula" src="${esc(s)}" alt="${esc(alt)}" loading="lazy" data-ztimg onerror="this.style.display='none'">`;
       }
       return `<img class="fig" src="${esc(s)}" alt="${esc(alt)}" loading="lazy" data-ztimg onerror="this.style.display='none'">`;
@@ -426,7 +426,7 @@
                    cursor:pointer;">${optHtmlCell || (optImg
               ? `<img src="${esc(optImg)}" alt="选项${key}" loading="lazy"
                      onerror="this.style.display='none'"
-                     style="${String(optImg).indexOf('公式图') >= 0
+                     style="${String(optImg).indexOf('/formula/') >= 0
                        ? 'max-width:100%;height:auto;display:inline-block;vertical-align:middle'
                        : 'max-width:100%;height:auto;display:block;border-radius:6px'}">`
               : esc(text || '（源数据无此选项内容）'))}${

@@ -1,0 +1,9 @@
+题目图: total=1062  has_formula_in_name=0  has_timu_in_name=0
+    exts: {'.png': 1016, '.jpg': 45, '.gif': 1}
+公式图: total=3822  has_formula_in_name=3822  has_timu_in_name=0
+    formula-00080510e7c2588d.png
+    formula-000dfaa0706a76ff.png
+    formula-001035f15759fd3c.png
+    formula-001bb0c6694afcbc.png
+    formula-0021a9d54238806c.png
+    exts: {'.png': 3822}

@@ -50,9 +50,9 @@ QID_RE = re.compile(r"qid\s*[（(]?(\d+)[）)]?")
 def rewrite_img(src):
     name = os.path.basename(src)
     if "题目图" in src:
-        return "assets/zt/题目图/" + name
+        return "assets/zt/timu/" + name
     if "公式图" in src:
-        return "assets/zt/公式图/" + name
+        return "assets/zt/formula/" + name
     return src
 
 

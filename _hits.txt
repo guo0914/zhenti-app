@@ -1,0 +1,199 @@
+### PROJECT-STATE.md  (3 lines)
+   64| - 公式图（路径含「公式图」）按原始尺寸显示，**不能拉伸**
+   65| - flex 容器必须加 `align-items:flex-start`，否则公式图被 stretch 糊掉
+  137| - 图片渲染：图形推理 281/282 有图、公式图不拉伸、纯图片选项 4/4、题干图不与选项图重复
+### _scan.txt  (4 lines)
+    2| assets\zt\公式图
+    3| assets\zt\题目图
+    4| [dir] assets\zt\公式图 -> 3822 files
+    5| [dir] assets\zt\题目图 -> 1062 files
+### _scan2.txt  (2 lines)
+    1| 题目图: total=1062  nonascii_filename=0
+    2| 公式图: total=3822  nonascii_filename=0
+### _scan3.txt  (5 lines)
+    3| utf-8  -> Payload/App.app/public/assets/zt/题目图/194eefc400b685e.png
+    8| utf-8  -> Payload/App.app/public/assets/zt/题目图/1959acad2f98937.png
+   13| utf-8  -> Payload/App.app/public/assets/zt/题目图/194f98286798499.png
+   18| utf-8  -> Payload/App.app/public/assets/zt/题目图/19b06c990d123f8.png
+   22| refs 题目图=2322 公式图=7549 in 26 files
+### fetch_images.py  (13 lines)
+    2| 下载题目引用的图片（题目图 / 公式图）。
+    5| 因此与文字抓取共用 60 次/小时额度。本脚本按「题目图优先、公式图其次」排序，
+   10| python fetch_images.py --only-timu      # 只下题目图（图形推理用）
+   68| """从已解析的题库里收集图片相对路径，分成题目图与公式图。"""
+   76| if "题目图" in src:
+   78| elif "公式图" in src:
+   90| ap.add_argument("--only-timu", action="store_true", help="只下载题目图")
+   97| tasks.append(("题目图", n, f"90-图片/题目图/{n}"))
+  100| tasks.append(("公式图", n, f"90-图片/公式图/{n}"))
+  107| log(f"图片引用：题目图 {len(timu)}，公式图 {len(formula)}；待下载 {len(pending)}")
+  150| n_t = len(os.listdir(os.path.join(IMG_DIR, "题目图"))) if os.path.isdir(os.path.join(IMG_DIR, "题目图")) else 0
+  151| n_f = len(os.listdir(os.path.join(IMG_DIR, "公式图"))) if os.path.isdir(os.path.join(IMG_DIR, "公式图")) else 0
+  152| log(f"本地已有：题目图 {n_t}，公式图 {n_f}")
+### fetch_images_parallel.py  (12 lines)
+    2| 并行下载题目图片（走 raw.githubusercontent.com，不消耗 API 配额）。
+    4| 图形推理必须依赖图片；公式图仅用于解析展示，可按需再下。
+    7| python fetch_images_parallel.py                 # 题目图 + 公式图
+    8| python fetch_images_parallel.py --only-timu     # 只下题目图
+   40| if "题目图" in src:
+   42| elif "公式图" in src:
+   91| tasks = [("题目图", n) for n in timu]
+   93| tasks += [("公式图", n) for n in formula]
+   96| log(f"题目图 {len(timu)}，公式图 {len(formula)}；待下载 {len(pending)}")
+  123| n_t = len(os.listdir(os.path.join(IMG_DIR, "题目图"))) if os.path.isdir(os.path.join(IMG_DIR, "题目图")) else 0
+  124| n_f = len(os.listdir(os.path.join(IMG_DIR, "公式图"))) if os.path.isdir(os.path.join(IMG_DIR, "公式图")) else 0
+  125| log(f"结束：待下 {len(pending)}；本地题目图 {n_t}，公式图 {n_f}")
+### fetch_img_multi.py  (13 lines)
+    2| 下载题目/公式图片（多镜像回退，不消耗 GitHub API 配额）。
+    8| python fetch_img_multi.py                # 题目图 + 公式图
+    9| python fetch_img_multi.py --only-timu    # 只下题目图
+   50| """从各分类分片中收集引用到的图片文件名（含题干、材料、解析里的公式图）。"""
+   64| (timu if "题目图" in src else formula).add(n)
+   67| (timu if "题目图" in src else formula).add(n)
+   68| # 解析里以 markdown 图片语法保留的公式图
+   72| (timu if "题目图" in m else formula).add(n)
+   73| out = [("题目图", n) for n in sorted(timu)]
+   75| out += [("公式图", n) for n in sorted(formula)]
+  155| n_t = len(os.listdir(os.path.join(IMG_DIR, "题目图"))) if os.path.isdir(os.path.join(IMG_DIR, "题目图")) else 0
+  156| n_f = len(os.listdir(os.path.join(IMG_DIR, "公式图"))) if os.path.isdir(os.path.join(IMG_DIR, "公式图")) else 0
+  157| log(f"结束：待下 {len(pending)}；本地 题目图 {n_t}，公式图 {n_f}")
+### fetch_zhenti.py  (1 lines)
+    8| - 图片不在此阶段下载，后续按需（题目引用的题图/公式图）单独处理
+### parse_zhenti.py  (14 lines)
+   19| 题干正文（可能含 <p> 与 <img src="../90-图片/题目图/xxx.png">）
+  108| # 解析中的图片（公式图 + 题目图）都要保留，转成 markdown 图片语法交给前端渲染。
+  109| # 早期只匹配「公式图」，解析段里的「题目图」被 strip_tags 一起剥掉，
+  111| # 图形推理、数量关系都受影响）。题目图必须一并保留。
+  112| EXPL_IMG = re.compile(r'<img[^>]*src="([^"]*(?:公式图|题目图)/[^"]+)"[^>]*>', re.I)
+  116| """保留解析里的公式图与题目图，其余标签剥掉。"""
+  122| if "公式图" in src:
+  123| tokens.append(("公式", "assets/zt/" + "公式图/" + name))
+  125| tokens.append(("图", "assets/zt/" + "题目图/" + name))
+  148| """把仓库里的 ../90-图片/题目图/x.png 改成本地路径 assets/zt/题目图/x.png。"""
+  150| if "题目图" in src:
+  151| return "assets/zt/" + "题目图/" + name
+  152| if "公式图" in src:
+  153| return "assets/zt/" + "公式图/" + name
+### scripts\audit_all.py  (2 lines)
+  333| # 根因：parse_zhenti.py 的 FORMULA_IMG 只匹配「公式图」，
+  334| # 解析段里的「题目图」被 strip_tags 一起剥掉；guokao 分片是后来用
+### scripts\fetch_guokao.py  (1 lines)
+  119| 源仓库用 <img flag="tex" src="../90-图片/公式图/xxx.png" /> 表示公式/图形，
+### scripts\fetch_missing_imgs.py  (4 lines)
+   58| if "题目图" in s:
+   59| refs.add(("题目图", os.path.basename(s)))
+   60| elif "公式图" in s:
+   61| refs.add(("公式图", os.path.basename(s)))
+### scripts\fix_formula_img.py  (13 lines)
+    1| """修复公式图显示：按原始尺寸显示，不拉伸放大
+    4| 公式图是 15×33、142×22 这类小图（分数、公式片段），
+    9| 区分「题目图」和「公式图」：
+   10| · 题目图（图形推理、图表）：max-width:100%，可放大
+   11| · 公式图：不放大，按原始尺寸显示（image-rendering: auto）
+   25| # 题目配图渲染：区分公式图
+   27| html.push('    <img src="' + esc(String(src)) + '" alt="题目图"' +
+   35| var isFormula = String(src).indexOf('公式图') >= 0;
+   36| // 公式图是 15x33 这类小片段，放大就会糊；
+   42| html.push('    <img src="' + esc(String(src)) + '" alt="题目图"' +
+   51| print("已修改题目配图渲染（区分公式图）")
+   66| var isFormula = String(src).indexOf('公式图') >= 0;
+   79| print("已修改材料图表渲染（区分公式图）")
+### scripts\fix_material_dup.py  (3 lines)
+   19| · 有些是相对路径        'assets/zt/题目图/xxx.png'
+   82| html.push('    <img src="' + esc(src) + '" alt="题目图"' +
+   93| html.push('    <img src="' + esc(String(src)) + '" alt="题目图"' +
+### scripts\fix_stem_inline_html.py  (9 lines)
+    3| 修复「题干内联公式图/配图被抽走、位置丢失」。
+    8| 对于「数列题」这类题目，题干里的数字本身就是公式图：
+   58| if "题目图" in src:
+   59| return "assets/zt/题目图/" + name
+   60| if "公式图" in src:
+   61| return "assets/zt/公式图/" + name
+   90| if "公式图" in src:
+   91| # 公式图（含数列数字）必须按原始尺寸内联，不能被拉伸
+  222| if not any("formula" in s or "公式图" in s for s in IMG_RE.findall(inner)) \
+### scripts\fix_zhenti_json.py  (4 lines)
+   37| if "公式图" in src:
+   38| return "公式图/" + name
+   39| if "题目图" in src:
+   40| return "题目图/" + name
+### scripts\rebuild_guokao_imgs.py  (8 lines)
+   13| src="../90-图片/题目图/19ad3b3b7e23ff1.png" /></p>
+   17| · 题干图片（题目图）
+   18| · 公式图
+   76| # 归一化路径：../90-图片/题目图/x.png → 题目图/x.png
+   83| if "公式图" in src:
+   84| norm.append("公式图/" + name)
+   85| elif "题目图" in src:
+   86| norm.append("题目图/" + name)
+### scripts\regression-test.js  (1 lines)
+  103| ['解析公式图渲染', /renderExplain\(q\.explain/],
+### scripts\repair_all_defects.py  (5 lines)
+   49| """../90-图片/公式图/x.png → 公式图/x.png"""
+   51| if "公式图" in src:
+   52| return "公式图/" + name
+   53| if "题目图" in src:
+   54| return "题目图/" + name
+### scripts\repair_guokao_explain_imgs.py  (6 lines)
+    4| 源仓库用 <img flag="tex" src="../90-图片/公式图/xxx.png" /> 表示公式/图形，
+    5| fetch_guokao.py 的 clean_rich() 把它替换成 [图] 占位，导致解析里的公式图
+   50| if "公式图" in src:
+   51| sub, alt = "公式图", "公式"
+   52| elif "题目图" in src:
+   53| sub, alt = "题目图", "图"
+### scripts\repair_option_html.py  (6 lines)
+    4| 修复「选项内联公式图/配图」缺陷（v2）。
+   52| if "题目图" in src:
+   53| return "assets/zt/题目图/" + name
+   54| if "公式图" in src:
+   55| return "assets/zt/公式图/" + name
+   72| if "公式图" in src:
+### scripts\repair_zhenti_explain_imgs.py  (8 lines)
+    2| """还原 7 个基分片 explain 里被丢掉的「题目图」。
+    4| 根因：parse_zhenti.py 的 FORMULA_IMG 只匹配 `src="...公式图/..."` 的图片，
+    5| 解析段里的「题目图」（如定义判断里的符号对照图、图形推理里的参考图）
+   11| 把所有 <img>（题目图 + 公式图）按原位置转成 markdown 图片语法，
+   59| if "公式图" in src:
+   60| return "\n![公式](assets/zt/公式图/%s)\n" % base
+   61| if "题目图" in src:
+   62| return "\n![图](assets/zt/题目图/%s)\n" % base
+### scripts\sync_guokao_option_html.py  (1 lines)
+   10| 于是「文字 + 内联公式图」的选项在国考卷里退化成「只有图、文字全丢」，
+### site\assets\app.js  (1 lines)
+ 1186| <li>题目图片字段 <code>imgs</code> 可填相对路径数组。</li>
+### site\assets\papers-v5.js  (8 lines)
+   26| var isFormula = s.indexOf('公式图') >= 0;
+  542| var isFormula = String(optImg).indexOf('公式图') >= 0;
+  646| var isFormula = String(src).indexOf('公式图') >= 0;
+  676| // 题目配图（图形推理、资料分析图表、数量关系公式图等）
+  684| // 小尺寸公式图（15x33 像素）拉伸到整行宽，糊成一团黑块。
+  688| var isFormula = String(src).indexOf('公式图') >= 0;
+  689| // 公式图是 15x33 这类小片段，放大就会糊；
+  696| html.push('    <img src="' + esc(String(src)) + '" alt="题目图"' +
+### site\assets\style.css  (2 lines)
+  548| /* 解析里的公式图 */
+  555| /* 解析里的题目图（整幅图形，按宽度自适应，不能限高） */
+### site\assets\zhenti-v5.js  (4 lines)
+  129| // 公式图是小符号（15×33 等），限制高度即可；题目图是整幅图形（如 600×268），
+  131| if (s.indexOf('公式图') >= 0) {
+  429| style="${String(optImg).indexOf('公式图') >= 0
+  450| ? `<div class="q-img-wrap">${q.imgs.map(s => `<img src="${esc(s)}" alt="题目图" data-ztimg>`).join('')}</div>`
+### site\assets\zhenti.js  (1 lines)
+  424| ? `<div class="q-img-wrap">${q.imgs.map(s => `<img src="${esc(s)}" alt="题目图" data-ztimg>`).join('')}</div>`
+### site\data\zt\common.json  (1 lines)
+    1| [{"id":"5509783","cat":"common","sub":"人文常识","paper":"2023年四川省公务员录用考试《行测》试题（网友回忆版）","year":"2023","region":"四川","no":1,"stem":"下列关于我国社会保障制度的说法错误的是：","
+### site\data\zt\data.json  (1 lines)
+    1| [{"id":"5509780","cat":"data","sub":"增长","paper":"2023年四川省公务员录用考试《行测》试题（网友回忆版）","year":"2023","region":"四川","no":1,"stem":"2020年，我国软件和信息技术服务业营业利润率（利润总
+### site\data\zt\graph.json  (1 lines)
+    1| [{"id":"5509799","cat":"graph","sub":"图形推理","paper":"2023年四川省公务员录用考试《行测》试题（网友回忆版）","year":"2023","region":"四川","no":1,"stem":"从所给四个选项中，选择最合适的一个填入问号处，使
+### site\data\zt\guokao.json  (1 lines)
+    1| [{"id":"gk-2026xz-19526238","cat":"politics","sub":"新思想","paper":"2026年国家公务员录用考试《行测》题（行政执法卷网友回忆版）","year":"2026","region":"国考","no":"1","stem":"习近平总书记
+### site\data\zt\judge.json  (1 lines)
+    1| [{"id":"5509789","cat":"judge","sub":"定义判断","paper":"2023年四川省公务员录用考试《行测》试题（网友回忆版）","year":"2023","region":"四川","no":7,"stem":"草地土壤是草原、草甸和草坪等草地植被下发育成的土
+### site\data\zt\politics.json  (1 lines)
+    1| [{"id":"5509625","cat":"politics","sub":"时事政治","paper":"2023年吉林省公务员录用考试《行测》题（网友回忆版）","year":"2023","region":"吉林","no":1,"stem":"习近平总书记在党的二十大报告中强调：“人心是
+### site\data\zt\quantity.json  (1 lines)
+    1| [{"id":"5509774","cat":"quantity","sub":"数学运算","paper":"2023年四川省公务员录用考试《行测》试题（网友回忆版）","year":"2023","region":"四川","no":1,"stem":"在某应急救援作业中，假设每台机器工作效率相
+### site\data\zt\verbal.json  (2 lines)
+    1| [{"id":"5509436","cat":"verbal","sub":"逻辑填空","paper":"2023年四川省公务员录用考试《行测》试题（网友回忆版）","year":"2023","region":"四川","no":1,"stem":"在海洋最深和最寒冷的地方，海洋生物——主要是无
+    2| \n【文段出处】人民日报《公园功能+ 生活美好+》","imgs":[],"tf":false},{"id":"10204442","cat":"verbal","sub":"语句表达","paper":"2024年广东省公务员录用考试《行测》题（网友回忆版）","year":"2024","reg

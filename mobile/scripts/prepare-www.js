@@ -27,20 +27,35 @@ const API_BASE = apiArg ? apiArg.split('=')[1] : '';
 // 不复制到 App 的文件（调试用）
 const SKIP = ['diag.html', 'minimal.html', 'manifest.webmanifest'];
 
+// 不复制到 App 的文件名模式（脚本备份、临时产物）
+// site/data/zt/ 下每个分片都留了 6-10 个 *.bak，加起来约 40MB，绝不能进安装包
+const SKIP_RE = [
+  /\.bak$/,                        // foo.json.bak
+  /\.json\.[a-z0-9]+bak$/,         // foo.json.explimgbak / foo.json.stemhtmlbak
+  /\.bak\d+$/,                     // foo.bak1
+  /~$/, /\.swp$/,                  // 编辑器临时文件
+  /\.tmp$/, /\.orig$/, /\.rej$/,   // 其它临时产物
+  /^_/                             // _check1.txt 之类的临时报告
+];
+
 function log(msg) { console.log('  ' + msg); }
 
 function rmrf(p) {
   if (fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true });
 }
 
-function copyDir(src, dest) {
+function copyDir(src, dest, stats) {
   fs.mkdirSync(dest, { recursive: true });
   for (const name of fs.readdirSync(src)) {
     const s = path.join(src, name);
     const d = path.join(dest, name);
     if (SKIP.includes(name)) continue;
+    if (SKIP_RE.some(re => re.test(name))) {
+      if (stats) stats.skipped.push(path.relative(SRC, s));
+      continue;
+    }
     const st = fs.statSync(s);
-    if (st.isDirectory()) copyDir(s, d);
+    if (st.isDirectory()) copyDir(s, d, stats);
     else fs.copyFileSync(s, d);
   }
 }
@@ -57,10 +72,14 @@ function main() {
 
   // 1) 复制
   rmrf(DEST);
-  copyDir(SRC, DEST);
+  const stats = { skipped: [] };
+  copyDir(SRC, DEST, stats);
 
   const count = fs.readdirSync(DEST, { recursive: true }).length;
   log('已复制 ' + SRC + ' → www/');
+  if (stats.skipped.length) {
+    log('已跳过 ' + stats.skipped.length + ' 个备份/临时文件（不进安装包）');
+  }
 
   // 2) 改写 index.html
   const idxPath = path.join(DEST, 'index.html');

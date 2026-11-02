@@ -23,7 +23,7 @@
     var safe = esc(text || '');
     return safe.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function (m, alt, src) {
       var s = String(src);
-      var isFormula = s.indexOf('公式图') >= 0;
+      var isFormula = s.indexOf('/formula/') >= 0;
       var style = isFormula
         ? 'height:auto;max-width:none;width:auto;vertical-align:middle;display:inline-block;margin:0 2px'
         : 'max-width:100%;height:auto;border-radius:6px;border:1px solid var(--line,#e5e7eb);margin:6px 0';
@@ -539,7 +539,7 @@
             // 已转义文字、图片保留原位，可直接注入
             inner = optHtmlCell;
           } else if (optImg) {
-            var isFormula = String(optImg).indexOf('公式图') >= 0;
+            var isFormula = String(optImg).indexOf('/formula/') >= 0;
             inner = '<img src="' + esc(optImg) + '" alt="选项' + key + '"' +
               ' loading="lazy"' +
               ' onerror="this.style.display=\'none\'"' +
@@ -643,7 +643,7 @@
           (collapse ? 'max-height:120px;overflow:hidden;position:relative' : '') + '">');
         (q.materialImgs || []).forEach(function (src) {
           if (!src) return;                       // 跳过空值
-          var isFormula = String(src).indexOf('公式图') >= 0;
+          var isFormula = String(src).indexOf('/formula/') >= 0;
           var style = isFormula
             ? 'height:auto;max-width:none;width:auto;vertical-align:middle;display:inline-block;margin:2px'
             : 'max-width:100%;height:auto;display:block;margin-bottom:10px';
@@ -685,7 +685,7 @@
           html.push('  <div style="margin-top:12px;display:flex;flex-direction:column;' +
             'align-items:flex-start;gap:8px">');
           _imgs.forEach(function (src) {
-            var isFormula = String(src).indexOf('公式图') >= 0;
+            var isFormula = String(src).indexOf('/formula/') >= 0;
             // 公式图是 15x33 这类小片段，放大就会糊；
             // 按原始尺寸显示，并加 image-rendering 保证清晰
             var style = isFormula

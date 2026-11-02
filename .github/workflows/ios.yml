@@ -123,7 +123,9 @@ jobs:
           mkdir -p build/Payload
           cp -R "$APP_PATH" build/Payload/
           cd build
-          zip -r -q App-unsigned.ipa Payload
+          # 不能用 zip -r：macOS 的 zip 不设 0x800 UTF-8 标志位，iOS 会把
+          # assets/zt/timu 之类以外的中文名解成乱码，导致 App 内图片全 404。
+          python3 "$GITHUB_WORKSPACE/mobile/scripts/make-ipa.py" Payload App-unsigned.ipa
           echo "=== IPA 信息 ==="
           ls -lh App-unsigned.ipa
           unzip -l App-unsigned.ipa | head -15

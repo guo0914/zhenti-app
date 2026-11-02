@@ -69,3 +69,9 @@ msg_*.txt
 scripts/tmp_*
 _*.png
 _*.cjs
+
+# ---------- 本地测试产物（绝不能提交） ----------
+mobile/_payloadtest/
+_check*.txt
+_msg.txt
+*.ipa
