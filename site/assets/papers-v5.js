@@ -18,6 +18,19 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
+  /** 解析文本：转义后把 ![公式](path) 变成真实图片（与 zhenti-v5.js 的 renderExplain 一致） */
+  function renderExplain(text) {
+    var safe = esc(text || '');
+    return safe.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function (m, alt, src) {
+      var s = String(src);
+      var isFormula = s.indexOf('公式图') >= 0;
+      var style = isFormula
+        ? 'height:auto;max-width:none;width:auto;vertical-align:middle;display:inline-block;margin:0 2px'
+        : 'max-width:100%;height:auto;border-radius:6px;border:1px solid var(--line,#e5e7eb);margin:6px 0';
+      return '<img src="' + esc(s) + '" alt="' + esc(alt) + '" loading="lazy" style="' + style +
+        '" onerror="this.style.display=\'none\'">';
+    });
+  }
   function $(sel, ctx) { return (ctx || document).querySelector(sel); }
   function $$(sel, ctx) { return Array.from((ctx || document).querySelectorAll(sel)); }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
@@ -743,7 +756,7 @@
           (a.ok ? '✅ 正确' : '❌ 错误') + '</b> <span class="tiny">答案：' +
           esc(q.answer || '?') + '</span></div>');
         html.push('  <div style="font-size:14px;line-height:1.9;white-space:pre-wrap">' +
-          esc(q.explain || '（无解析）') + '</div>');
+          renderExplain(q.explain || '（无解析）') + '</div>');
         html.push('</div>');
       }
 

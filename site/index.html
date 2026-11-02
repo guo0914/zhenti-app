@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-app-ver="v8.8">
+<html lang="zh-CN" data-app-ver="v8.9">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -108,7 +108,7 @@
      里面那段清理逻辑永远不会更新（死循环）。
      因此把清理动作放到一个「文件名固定、内容带版本」的独立脚本，
      并通过查询参数强制不使用缓存。 -->
-<script src="assets/selfheal.js?v=32be289af6"></script>
+<script src="assets/selfheal.js?v=744b87cfce"></script>
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.json" />
@@ -236,7 +236,7 @@
 <script>
 /* 版本 + 端口探测：页面被缓存或换了端口时提示，避免账号“丢失”的错觉 */
 (function () {
-  var VER = 'v8.8';
+  var VER = 'v8.9';
   window.__APP_VER__ = VER;   // 供 selfheal.js 读取
   var KEY = 'zlfx.pageVer';
   var PORT_KEY = 'zlfx.port';
@@ -288,7 +288,7 @@
 <script src="assets/cidian.js?v=268523a702"></script>
 <script src="assets/fanwen.js?v=382f46fa70"></script>
 <script src="assets/law-v5.js?v=718b967e21"></script>
-<script src="assets/papers-v5.js?v=f304cc041c"></script>
+<script src="assets/papers-v5.js?v=94cb0b7527"></script>
 <script src="assets/app.js?v=33e2dcdf2e"></script>
 <script src="assets/layoutfix.js?v=a32cf046f2"></script>
 

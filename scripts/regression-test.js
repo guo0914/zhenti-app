@@ -99,6 +99,8 @@ const checks = [
   ['materialImgs 渲染', /materialImgs/],
   ['选项图片渲染', /q\.optionImgs/],
   ['选项内联HTML渲染', /q\.optionHtml/],
+  ['题干内联HTML渲染', /q\.stemHtml/],
+  ['解析公式图渲染', /renderExplain\(q\.explain/],
   ['材料折叠', /btnMatToggle/],
   ['表格布局', /opt-table/],
 ];
