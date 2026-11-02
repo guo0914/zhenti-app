@@ -1,8 +1,14 @@
 /* ===== 分类真题刷题 · Service Worker =====
  * 策略：
  *   - HTML / JS / CSS：Network First（每次都问服务器，失败才用缓存）
- *   - 数据 JSON / 图片：Cache First（体积大、变动少）
+ *   - 数据 JSON：Network First + 4 秒超时回退缓存
+ *   - 图片 / 字体：Cache First（体积大、变动少）
  *   - /api/：直连网络，永不缓存
+ *
+ * 注意 0：数据 JSON 绝不能走 Cache First。
+ * 早期版本对 JSON 用 Cache First，而前端请求 URL 上写死了 ?v=17，
+ * 于是旧 JSON 进缓存后 URL 永不变 → 永远命中旧数据，
+ * 表现为「材料张冠李戴」「改了数据但手机端看不到」。
  *
  * 注意 1：绝不在 install 阶段 addAll 预缓存代码文件。
  * 早期版本用 addAll 缓存了旧 CSS/JS，一旦文件更新而缓存名没变，
@@ -13,8 +19,12 @@
  * 生成一个新缓存名，旧缓存永远删不掉，多个缓存互相污染。
  */
 
-const CACHE = 'zlfx-data-v8.1';   // 固定名，只存数据/图片
+const CACHE = 'zlfx-data-v8.2';   // 固定名，只存数据/图片
 const CACHE_PREFIX = 'zlfx-';     // 清理时按前缀删所有旧缓存
+
+// 数据 JSON 走 Network First 时的网络等待上限（毫秒）。
+// 超时立刻回退缓存，避免弱网下白屏。
+const DATA_NET_TIMEOUT = 4000;
 
 // 体积大且变动少的数据文件（可以预缓存）
 const PRE_CACHE_DATA = [
@@ -87,7 +97,33 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 其它（数据、图片、字体）：Cache First，回退网络
+  // 数据 JSON：Network First + 超时回退缓存。
+  // 早期这里是 Cache First，配合 URL 上写死的 ?v=17，
+  // 一旦旧 JSON 进了缓存就永远命中旧数据（表现为「题目材料张冠李戴、
+  // 改了数据手机端永远看不到」）。数据体积不大，每次都问服务器是值得的。
+  const isData = /\.json$/i.test(url.pathname);
+
+  if (isData) {
+    e.respondWith(
+      Promise.race([
+        fetch(e.request, { cache: 'no-store' }).then(res => {
+          if (res && res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone)).catch(() => {});
+          }
+          return res;
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('data-timeout')), DATA_NET_TIMEOUT)
+        ),
+      ]).catch(() =>
+        caches.match(e.request, { ignoreSearch: true }).then(hit => hit || Response.error())
+      )
+    );
+    return;
+  }
+
+  // 其它（图片、字体）：Cache First，回退网络
   e.respondWith(
     caches.match(e.request).then(hit => {
       if (hit) return hit;

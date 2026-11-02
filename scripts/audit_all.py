@@ -152,19 +152,39 @@ def main():
     for x in f_list[:8]:
         print(f"     [{x[0]}] {x[1]}  {x[2]}")
 
-    # ── G. 图片文件缺失 ──
+    # ── G. 图片文件缺失（三类字段都要查，含选项图） ──
     print("\n[G] 图片文件缺失")
     miss = 0
     tot = 0
     for c, arr in data.items():
         for q in arr:
-            for s in (q.get("imgs") or []) + (q.get("materialImgs") or []):
+            for s in ((q.get("imgs") or []) + (q.get("materialImgs") or [])
+                      + (q.get("optionImgs") or [])):
                 if not s:
                     continue
                 tot += 1
                 if not os.path.exists(os.path.join(ROOT, "site", s)):
                     miss += 1
     print(f"   引用 {tot} 张，缺失 {miss}")
+
+    # ── H. 题干配图 imgs 与选项图 optionImgs 重复 ──
+    # 根因：parse_zhenti.py 按整个题目块提取 <img>，选项里的图也进了 imgs，
+    # 前端会在题干下方多渲染一张本属于选项 A 的图。
+    print("\n[H] 题干配图 imgs 与选项图 optionImgs 重复（题干下会多出一张选项图）")
+    h_list = []
+    for c, arr in data.items():
+        for q in arr:
+            imgs = [x for x in (q.get("imgs") or []) if x]
+            oi = [x for x in (q.get("optionImgs") or []) if x]
+            if not imgs or not oi:
+                continue
+            inter = set(imgs) & set(oi)
+            if inter:
+                h_list.append((c, str(q.get("id")), q.get("sub") or "",
+                               len(inter), sorted(inter)[0]))
+    print(f"   合计 {len(h_list)} 题")
+    for x in h_list[:10]:
+        print(f"     [{x[0]}] {x[1]} [{x[2]}] 重复{x[3]}张  {x[4]}")
 
 
 if __name__ == "__main__":

@@ -394,7 +394,10 @@
   var _shardCache = {};
   function loadShardJson(cat, cb) {
     if (_shardCache[cat]) { cb(_shardCache[cat]); return; }
-    fetch('data/zt/' + cat + '.json')
+    // 带页面版本号 + no-store：不带版本号时浏览器缓存键恒定，
+    // 数据文件更新后仍会命中旧副本（旧副本里有错配的材料）。
+    var _v = window.__APP_VER__ || Date.now();
+    fetch('data/zt/' + cat + '.json?v=' + encodeURIComponent(_v), { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();

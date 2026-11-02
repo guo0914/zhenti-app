@@ -25,9 +25,16 @@
       shardCache.set(cat, filtered);
       return filtered;
     }
-    const res = await fetch(`data/zt/${cat}.json?v=17`, { cache: 'force-cache' });
+    // 版本号取自页面版本，绝不写死。
+    // 曾经写成 ?v=17 并配 cache:'force-cache'，导致数据文件更新后
+    // URL 永不变 → 浏览器（或包内 WebView）永远返回旧 JSON，
+    // 表现为「材料张冠李戴」「手机上改了数据看不到」。
+    const ver = window.__APP_VER__ || Date.now();
+    const res = await fetch(`data/zt/${cat}.json?v=${encodeURIComponent(ver)}`,
+      { cache: 'no-store' });
     if (!res.ok) throw new Error('题目加载失败');
-    const arr = await res.json();
+    const data = await res.json();
+    const arr = data && data.questions ? data.questions : (Array.isArray(data) ? data : []);
     shardCache.set(cat, arr);
     return arr;
   }
