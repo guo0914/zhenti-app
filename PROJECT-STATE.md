@@ -87,11 +87,20 @@ python scripts/bump_version.py --ver=vX.Y   # 更新资源版本号
 ```
 
 **改动前端后必须做：**
-1. `bump_version.py --ver=vX.Y`（更新 `?v=` 哈希）
+1. `bump_version.py --ver=vX.Y`（更新 `?v=` 哈希 + 同步三处版本号）
 2. `cd mobile && node scripts/prepare-www.js && npx cap sync ios`
 3. 推送到 GitHub → 自动触发 iOS 构建
 
 ⚠️ `bump_version.py` 正则要匹配任意查询串（曾因只匹配 `?v=` 导致 `?build=v5` 永不更新）
+
+⚠️ **版本号必须三处同步**（否则自愈机制失效，表现为「改了看不到」）：
+| 位置 | 变量 |
+|------|------|
+| `site/index.html` | `data-app-ver="vX.Y"` |
+| `site/index.html` | `var VER = 'vX.Y'` |
+| `site/assets/selfheal.js` | `var MY_VERSION = 'vX.Y'` |
+
+曾因前两处写死 `v5.0`、`VER` 却是 `v8.0`，`selfheal.js` 判据恒等 → 「页面版本落后」分支永不触发 → 自愈完全失效。`bump_version.py` 现已自动同步这三处，以及 `sw.js` 的 `CACHE` 名。
 
 ## 七、iOS App
 
