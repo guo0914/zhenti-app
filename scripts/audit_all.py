@@ -221,6 +221,30 @@ def main():
     for x in j_list[:10]:
         print(f"     [{x[0]}] {x[1]} 选项{x[2]}  {x[3]}")
 
+    # ── K. 题干要求「画线/划线」但选项没有下划线 ──
+    # 根因：源 markdown 用 <u>…</u> 标注画线部分，
+    # parse_zhenti.py 的 strip_tags 把标签剥掉，画线信息彻底丢失，
+    # 题干说「下列画线的动词」而界面上没有任何画线，题目无法作答。
+    # 判据：题干出现「下列/以下/选项中 …… 画线/划线」这种**指向选项**的说法，
+    # 且没有任何选项的 optionHtml 里带 text-decoration:underline。
+    # 排除「划线处 / 画线处」（那是填空占位，不是下划线），
+    # 也排除「画线词 / 画线句」（那是指题干或材料里的词，不是选项）。
+    print("\n[K] 题干要求画线但选项没有下划线（画线标记被剥掉）")
+    k_list = []
+    UL_RE = re.compile(r"(?:下列|以下|选项中|四个选项)[^。；]{0,14}(?:画线|划线)(?!处|词|句|部分|位置)")
+    for c, arr in data.items():
+        for q in arr:
+            stem = str(q.get("stem") or "")
+            if not UL_RE.search(stem):
+                continue
+            oh = q.get("optionHtml") or []
+            has_ul = any("text-decoration:underline" in str(h) for h in oh)
+            if not has_ul:
+                k_list.append((c, str(q.get("id")), stem[:50]))
+    print(f"   合计 {len(k_list)} 题")
+    for x in k_list[:10]:
+        print(f"     [{x[0]}] {x[1]}  {x[2]}")
+
 
 if __name__ == "__main__":
     main()
