@@ -738,7 +738,7 @@
         if (refA) {
           html.push('    <div style="font-size:14px;line-height:1.9;white-space:pre-wrap;' +
             'padding:12px;background:#f0fdf4;border-radius:6px;border-left:3px solid #16a34a;' +
-            'margin-top:10px">' + esc(refA) + '</div>');
+            'margin-top:10px">' + renderExplain(refA) + '</div>');
         }
         html.push('  </div>');
         html.push('</div>');
