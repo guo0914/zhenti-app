@@ -81,7 +81,7 @@
 ## 六、自检工具
 
 ```bash
-python scripts/audit_all.py          # 7 维数据审计
+python scripts/audit_all.py          # 8 维数据审计（A~H，含图片引用重复）
 node scripts/regression-test.js      # 34 项回归测试
 python scripts/bump_version.py --ver=vX.Y   # 更新资源版本号
 ```
@@ -124,6 +124,8 @@ python scripts/bump_version.py --ver=vX.Y   # 更新资源版本号
 | 不完整卷 | 6 套 | 网友回忆版缺题，`coverage < 1`，界面已标注「⚠ 仅收录 X%」 |
 | 选项全空 | 114 题 | 纯图片选项，四选项均有 `optionImgs`，可正常作答 |
 
+⚠️ 题干配图 `imgs` 与选项图 `optionImgs` **不能出现同一路径**：`parse_zhenti.py` 按整个题目块提取 `<img>`，选项里的图会混进 `imgs`，前端就在题干下方多渲染一张本属于选项 A 的图。已用 `scripts/fix_img_option_dup.py` 清 141 题、229 个重复引用；`audit_all.py` 的 [H] 项专查此问题，必须保持 0。
+
 ## 九、验证过的功能
 
 - 13 个路由全部正常渲染
@@ -132,6 +134,7 @@ python scripts/bump_version.py --ver=vX.Y   # 更新资源版本号
 - 法律专业：2383 题、8 科目
 - 题库速查：搜索「悬泉置」命中 4 题
 - 申论批改：设置页、Key 测试、用量统计
+- 图片渲染：图形推理 281/282 有图、公式图不拉伸、纯图片选项 4/4、题干图不与选项图重复
 
 ## 十、待办
 
