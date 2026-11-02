@@ -12,7 +12,7 @@ dist/
 *.egg-info/
 
 # ---------- 数据库 ----------
-# 按用户要求已纳入版本管理（含账号与学习进度，仅私有仓库）
+# 已纳入版本管理（含账号与学习进度，仅私有仓库）
 # 仍排除运行时产生的临时文件
 quiz.db-wal
 quiz.db-shm
@@ -49,12 +49,7 @@ desktop.ini
 # 构建产物（由 scripts/build-single.js 生成，不入库）
 dist-single/
 
-
-# AI API Key（仅本机，绝不提交）
-ai_key.txt
-
-
-# ═══ 密钥保护（绝对不要提交）═══
+# ---------- 密钥保护（绝对不要提交） ----------
 ai_key.txt
 ai_key*.txt
 *api_key*
@@ -65,18 +60,12 @@ ai_key*.txt
 secrets.json
 *.secret
 
-# AI Key 相关所有文件（含 .old/.bak 等变体）
-ai_key*
-*apikey*
-
-
-# 数据修复备份
+# ---------- 数据修复备份 ----------
 site/data/zt/*.json.*bak*
+site/data/*.json.*bak*
 
-# 临时提交信息文件
+# ---------- 临时文件 ----------
 msg_*.txt
-
-# ��ʱ�ű�
 scripts/tmp_*
 _*.png
 _*.cjs

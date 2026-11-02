@@ -287,6 +287,43 @@ def main():
     for x in m_list[:10]:
         print(f"     [{x[0]}] {x[1]}  {x[2]}处  {x[3]}")
 
+    # ── N. 套卷模块被打断（同一模块的题被拆成两段）──
+    # 根因：fix_all_paper_order.py 按 (no, qid) 桶排序，
+    # 但部分国考卷的 no 编号体系与卷面题号不一致，
+    # 导致数量关系被拆成 9+1 两段，界面上「做完数量又冒出一道」。
+    # 判据：把 qids 映射成 cat 序列，连续段数应等于模块数。
+    print("\n[N] 套卷模块被打断（同一模块的题被拆成两段）")
+    n_list = []
+    papers_path = os.path.join(ROOT, "site", "data", "zt-papers.json")
+    if os.path.exists(papers_path):
+        cat_map = {}
+        for c, arr in data.items():
+            for q in arr:
+                cat_map[str(q.get("id"))] = q.get("cat") or c
+        doc = json.load(open(papers_path, encoding="utf-8"))
+        for p in doc.get("papers", []):
+            qids = [str(x) for x in (p.get("qids") or [])]
+            known = [q for q in qids if q in cat_map]
+            if not known:
+                continue                    # 申论卷 id 体系不同
+            seq = []
+            for q in known:
+                c = cat_map[q]
+                if not seq or seq[-1] != c:
+                    seq.append(c)
+            decl = [m.get("cat") for m in (p.get("modules") or [])]
+            if seq != decl:
+                n_list.append((p.get("paper") or "", len(seq), len(decl),
+                               len(set(seq)), seq))
+    print(f"   合计 {len(n_list)} 套")
+    for x in n_list[:6]:
+        print(f"     {x[0][:40]}  连续段{x[1]} 声明{x[2]} 模块{x[3]}")
+        print(f"       {x[4]}")
+
+    print("\n" + "=" * 64)
+    print(f"  审计完成：共 14 项判据（A~N）")
+    print("=" * 64)
+
 
 if __name__ == "__main__":
     main()
