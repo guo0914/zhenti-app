@@ -7,7 +7,16 @@
   D. 材料错配（题干自带横线却挂材料）
   E. 材料冗余（同一材料挂到过多题）
   F. 题干/选项缺失占位符
-  G. 图片文件缺失
+  G. 图片文件缺失（imgs / optionImgs / materialImgs）
+  H. 题干图与选项图重复
+  I. optionHtml 内联图丢失
+  J. 选项文本残留 HTML 标签
+  K. 题干要求画线但选项没下划线
+  L. 题干只剩标点但有配图
+  M. 解析残留 [图] 字面占位
+  N. 套卷模块被打断
+  O. 解析（explain）内联图片文件缺失   ← 早期漏检项，务必保留
+  P. 解析断句处疑似缺图
 """
 
 import sys
@@ -320,8 +329,48 @@ def main():
         print(f"     {x[0][:40]}  连续段{x[1]} 声明{x[2]} 模块{x[3]}")
         print(f"       {x[4]}")
 
+    # ── O. 解析（explain）内联图片文件缺失 ──
+    # 根因：parse_zhenti.py 的 FORMULA_IMG 只匹配「公式图」，
+    # 解析段里的「题目图」被 strip_tags 一起剥掉；guokao 分片是后来用
+    # repair_guokao_explain_imgs.py 补的，7 个基分片从未补过。
+    # 早期 [G] 只查 imgs/materialImgs/optionImgs，完全没查 explain，
+    # 所以 312 张图缺失时审计仍然「全绿」——这是漏检的根因，必须补。
+    print("\n[O] 解析（explain）内联图片文件缺失")
+    MD_IMG = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
+    o_list = []
+    o_tot = 0
+    for c, arr in data.items():
+        for q in arr:
+            e = str(q.get("explain") or "")
+            for alt, src in MD_IMG.findall(e):
+                o_tot += 1
+                if not os.path.exists(os.path.join(ROOT, "site", src)):
+                    o_list.append((c, str(q.get("id")), src))
+    print(f"   引用 {o_tot} 张，缺失 {len(o_list)}")
+    for x in o_list[:10]:
+        print(f"     [{x[0]}] {x[1]}  {x[2]}")
+
+    # ── P. 解析断句处疑似缺图（「依次为」「大于」后直接接标点）──
+    # 根因同上：图被剥掉后，解析文本里会出现「依次为”、“左边」这种
+    # 图本该在中间却直接接标点的断句。用它兜底检查是否还有漏网的图。
+    print("\n[P] 解析断句处疑似缺图（图被剥掉后直接接标点）")
+    # 判据必须收窄：只认「依次为」「大于」「小于」「等于」这四个
+    # 在原题里几乎一定跟图的位置。早期把「即」「为」也算进来，
+    # 结果「即，」「为。」这类正常中文断句误报 205 题（379 处）。
+    SUSPECT = re.compile(r"(?:依次为|大于|小于|等于)\s*[”、，。；]")
+    p_list = []
+    for c, arr in data.items():
+        for q in arr:
+            e = str(q.get("explain") or "")
+            n = len(SUSPECT.findall(e))
+            if n:
+                p_list.append((c, str(q.get("id")), n, e[:40]))
+    print(f"   合计 {len(p_list)} 题 / {sum(x[2] for x in p_list)} 处")
+    for x in p_list[:10]:
+        print(f"     [{x[0]}] {x[1]}  {x[2]}处  {x[3]}")
+
     print("\n" + "=" * 64)
-    print(f"  审计完成：共 14 项判据（A~N）")
+    print(f"  审计完成：共 16 项判据（A~P）")
     print("=" * 64)
 
 

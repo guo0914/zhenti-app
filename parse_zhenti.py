@@ -105,23 +105,30 @@ def strip_tags(text: str) -> str:
     return t.strip()
 
 
-# 解析中的公式是图片，转成 markdown 图片语法交给前端渲染
-FORMULA_IMG = re.compile(r'<img[^>]*src="([^"]*公式图/[^"]+)"[^>]*>', re.I)
+# 解析中的图片（公式图 + 题目图）都要保留，转成 markdown 图片语法交给前端渲染。
+# 早期只匹配「公式图」，解析段里的「题目图」被 strip_tags 一起剥掉，
+# 表现为「右边数位从大到小依次为」这类断句里凭空少了图（定义判断、
+# 图形推理、数量关系都受影响）。题目图必须一并保留。
+EXPL_IMG = re.compile(r'<img[^>]*src="([^"]*(?:公式图|题目图)/[^"]+)"[^>]*>', re.I)
 
 
 def explain_with_formulas(html_text: str) -> str:
-    """保留解析里的公式图，其余标签剥掉。"""
+    """保留解析里的公式图与题目图，其余标签剥掉。"""
     tokens: list[str] = []
 
     def repl(m):
-        name = os.path.basename(m.group(1))
-        tokens.append("assets/zt/" + "公式图/" + name)
+        src = m.group(1)
+        name = os.path.basename(src)
+        if "公式图" in src:
+            tokens.append(("公式", "assets/zt/" + "公式图/" + name))
+        else:
+            tokens.append(("图", "assets/zt/" + "题目图/" + name))
         return "\u0000%d\u0000" % (len(tokens) - 1)
 
-    tmp = FORMULA_IMG.sub(repl, html_text)
+    tmp = EXPL_IMG.sub(repl, html_text)
     tmp = strip_tags(tmp)
-    for i, src in enumerate(tokens):
-        tmp = tmp.replace("\u0000%d\u0000" % i, "\n![公式](%s)\n" % src)
+    for i, (alt, src) in enumerate(tokens):
+        tmp = tmp.replace("\u0000%d\u0000" % i, "\n![%s](%s)\n" % (alt, src))
     return re.sub(r"\n{3,}", "\n\n", tmp).strip()
 
 
