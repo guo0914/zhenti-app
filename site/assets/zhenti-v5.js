@@ -124,8 +124,15 @@
   /** 解析文本：转义后把 ![公式](path) 变成真实图片 */
   function renderExplain(text) {
     const safe = esc(text || '');
-    return safe.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
-      (m, alt, src) => `<img class="formula" src="${esc(src)}" alt="${esc(alt)}" data-ztimg>`);
+    return safe.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, src) => {
+      const s = String(src || '');
+      // 公式图是小符号（15×33 等），限制高度即可；题目图是整幅图形（如 600×268），
+      // 若也套 .formula 会被 max-height:34px 压成一条线，必须按宽度自适应。
+      if (s.indexOf('公式图') >= 0) {
+        return `<img class="formula" src="${esc(s)}" alt="${esc(alt)}" loading="lazy" data-ztimg onerror="this.style.display='none'">`;
+      }
+      return `<img class="fig" src="${esc(s)}" alt="${esc(alt)}" loading="lazy" data-ztimg onerror="this.style.display='none'">`;
+    });
   }
 
   function fmt(sec) {

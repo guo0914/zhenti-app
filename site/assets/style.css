@@ -552,6 +552,12 @@ select.btn:focus{outline:none;border-color:var(--brand)}
 }
 html[data-theme="dark"] .explain-b img.formula{background:#eef2ff}
 
+/* 解析里的题目图（整幅图形，按宽度自适应，不能限高） */
+.explain-b img.fig{
+  display:block;max-width:100%;height:auto;width:auto;
+  margin:8px 0;border-radius:6px;border:1px solid var(--line);
+}
+
 /* 端口/版本提示条 */
 .port-hint{
   position:fixed;top:12px;left:50%;transform:translateX(-50%);
