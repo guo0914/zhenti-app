@@ -519,9 +519,13 @@
             else if (picked) { bg = '#fdecef'; bd = '#e0405a'; lbg = '#e0405a'; lfg = '#fff'; }
           } else if (picked) { bg = '#eef0ff'; bd = '#4f46e5'; lbg = '#4f46e5'; lfg = '#fff'; }
 
-          // 选项内容：图片 > 文本 > 占位提示
+          // 选项内容：内联 HTML（文字+原位图片） > 图片 > 文本 > 占位提示
+          var optHtmlCell = String((q.optionHtml || [])[i] || '').trim();
           var inner;
-          if (optImg) {
+          if (optHtmlCell) {
+            // 已转义文字、图片保留原位，可直接注入
+            inner = optHtmlCell;
+          } else if (optImg) {
             var isFormula = String(optImg).indexOf('公式图') >= 0;
             inner = '<img src="' + esc(optImg) + '" alt="选项' + key + '"' +
               ' loading="lazy"' +

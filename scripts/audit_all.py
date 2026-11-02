@@ -186,6 +186,25 @@ def main():
     for x in h_list[:10]:
         print(f"     [{x[0]}] {x[1]} [{x[2]}] 重复{x[3]}张  {x[4]}")
 
+    # ── I. optionHtml 内联图丢失 ──
+    # 根因：选项里文字与图片混排（如「甘肃>广东>海南>浙江」），
+    # 解析时把 <img> 抽成 optionImgs，前端「有图只渲染图」，文字被丢弃。
+    # optionHtml 保存「文字+原位图片」，其 <img> 数不应少于 optionImgs 非空数。
+    print("\n[I] optionHtml 内联图丢失（选项文字被图片挤掉）")
+    i_list = []
+    for c, arr in data.items():
+        for q in arr:
+            oh = q.get("optionHtml") or []
+            if not oh:
+                continue
+            n_html = sum(str(h).count("<img") for h in oh)
+            n_opt = len([x for x in (q.get("optionImgs") or []) if x])
+            if n_html < n_opt:
+                i_list.append((c, str(q.get("id")), q.get("sub") or "", n_html, n_opt))
+    print(f"   合计 {len(i_list)} 题")
+    for x in i_list[:10]:
+        print(f"     [{x[0]}] {x[1]} [{x[2]}] html图{x[3]} < optionImgs{x[4]}")
+
 
 if __name__ == "__main__":
     main()
