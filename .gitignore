@@ -75,3 +75,8 @@ site/data/zt/*.json.*bak*
 
 # 临时提交信息文件
 msg_*.txt
+
+# ��ʱ�ű�
+scripts/tmp_*
+_*.png
+_*.cjs
