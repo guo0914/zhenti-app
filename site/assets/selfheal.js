@@ -18,7 +18,7 @@
   'use strict';
 
   // 本版本号。每次需要强制客户端刷新时，把它 +1。
-  var MY_VERSION = 'v8.4';
+  var MY_VERSION = 'v8.5';
 
   // 存储键
   var FLAG = 'zlfx.selfheal.version';
