@@ -13,7 +13,7 @@
  * 生成一个新缓存名，旧缓存永远删不掉，多个缓存互相污染。
  */
 
-const CACHE = 'zlfx-data-v5';   // 固定名，只存数据/图片
+const CACHE = 'zlfx-data-v8.1';   // 固定名，只存数据/图片
 const CACHE_PREFIX = 'zlfx-';     // 清理时按前缀删所有旧缓存
 
 // 体积大且变动少的数据文件（可以预缓存）

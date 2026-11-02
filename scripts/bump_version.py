@@ -63,9 +63,14 @@ def main():
 
     html2 = pat.sub(repl, html)
 
-    # 同步更新 VER
+    # 同步更新 VER 与 data-app-ver
+    # 注意：data-app-ver 曾被写死为 v5.0，而 VER 是 v8.0，
+    # selfheal.js 的 MY_VERSION 也是 v5.0 —— 三者恒等，
+    # 导致「页面版本落后」这条自愈分支永远不触发，自愈机制完全失效。
+    # 所以这里必须三处一起改。
     if ver:
         html2 = re.sub(r"var VER = '[^']*'", f"var VER = '{ver}'", html2)
+        html2 = re.sub(r'data-app-ver="[^"]*"', f'data-app-ver="{ver}"', html2)
 
     open(IDX, "w", encoding="utf-8").write(html2)
 
@@ -80,16 +85,25 @@ def main():
     if ver:
         print(f"\n  VER 设为 {ver}")
 
+    # 同步 selfheal.js 的 MY_VERSION（自愈机制的判据，必须与页面版本一致演进）
+    shp = os.path.join(SITE, "assets", "selfheal.js")
+    if ver and os.path.isfile(shp):
+        sh = open(shp, encoding="utf-8").read()
+        sh2 = re.sub(r"var MY_VERSION = '[^']*'", f"var MY_VERSION = '{ver}'", sh)
+        if sh2 != sh:
+            open(shp, "w", encoding="utf-8").write(sh2)
+            print(f"  selfheal.js MY_VERSION → {ver}")
+
     # 同步 sw.js 的 CACHE 名
     swp = os.path.join(SITE, "sw.js")
     sw = open(swp, encoding="utf-8").read()
-    m = re.search(r"const CACHE = 'zlfx-v([\d.]+)-'", sw)
+    m = re.search(r"const CACHE = 'zlfx-data-v([\d.]+)'", sw)
     target = ver.lstrip("v") if ver else None
     if target and m and m.group(1) != target:
-        sw = re.sub(r"const CACHE = 'zlfx-v[\d.]+-'",
-                    f"const CACHE = 'zlfx-v{target}-'", sw)
+        sw = re.sub(r"const CACHE = 'zlfx-data-v[\d.]+'",
+                    f"const CACHE = 'zlfx-data-v{target}'", sw)
         open(swp, "w", encoding="utf-8").write(sw)
-        print(f"  sw.js CACHE → zlfx-v{target}-")
+        print(f"  sw.js CACHE → zlfx-data-v{target}")
 
 
 if __name__ == "__main__":
