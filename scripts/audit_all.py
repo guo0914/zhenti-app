@@ -270,6 +270,23 @@ def main():
     for x in l_list[:10]:
         print(f"     [{x[0]}] {x[1]}  {x[2]}  图{x[3]}张")
 
+    # ── M. 解析里残留 "[图]" 字面占位 ──
+    # 根因：fetch_guokao.py 的 clean_rich() 把 <img> 替换成 "[图]" 文字，
+    # 用户看到的是一串「[图]」而不是公式/箭头/图形。
+    # 注意：![图](path) 的 alt 文本也叫「图」，必须排除，否则误报。
+    print("\n[M] 解析残留 [图] 字面占位")
+    REAL_PH = re.compile(r"(?<!!)\[图\]")
+    m_list = []
+    for c, arr in data.items():
+        for q in arr:
+            e = str(q.get("explain") or "")
+            n = len(REAL_PH.findall(e))
+            if n:
+                m_list.append((c, str(q.get("id")), n, e[:30]))
+    print(f"   合计 {len(m_list)} 题 / {sum(x[2] for x in m_list)} 处")
+    for x in m_list[:10]:
+        print(f"     [{x[0]}] {x[1]}  {x[2]}处  {x[3]}")
+
 
 if __name__ == "__main__":
     main()

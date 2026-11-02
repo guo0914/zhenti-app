@@ -134,11 +134,17 @@ for (const s of ['verbal', 'guokao']) {
 // ── 6. 图片文件存在性 ──
 console.log('\n[6] 图片文件');
 let imgTotal = 0, imgMissing = 0;
+const MDIMG = /!\[[^\]]*\]\(([^)]+)\)/g;
 for (const s of shards) {
   const p = path.join(zt, s + '.json');
   if (!fs.existsSync(p)) continue;
   for (const q of JSON.parse(fs.readFileSync(p, 'utf8'))) {
-    for (const src of (q.imgs || []).concat(q.materialImgs || [])) {
+    const all = (q.imgs || []).concat(q.materialImgs || []).concat(q.optionImgs || []);
+    const ex = String(q.explain || '');
+    let m;
+    MDIMG.lastIndex = 0;
+    while ((m = MDIMG.exec(ex)) !== null) all.push(m[1]);
+    for (const src of all) {
       if (!src) continue;
       imgTotal++;
       if (!fs.existsSync(path.join(SITE, src))) imgMissing++;
