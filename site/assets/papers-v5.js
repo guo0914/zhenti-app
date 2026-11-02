@@ -649,12 +649,22 @@
 
       // 题干（申论用 title，行测用 stem）
       var stemText = q.stem || q.title || '';
-      html.push('  <div style="font-size:15px;line-height:1.9;white-space:pre-wrap">' +
-        esc(stemText) + '</div>');
+      // stemHtml：题干里原本就有内联图（数列题的分数、物理题的下标等），
+      // 图片被抽到 imgs 后会与文字脱节，改用保留原位的 HTML 渲染。
+      var stemHtml = String(q.stemHtml || '').trim();
+      if (stemHtml) {
+        html.push('  <div style="font-size:15px;line-height:1.9">' +
+          stemHtml + '</div>');
+      } else {
+        html.push('  <div style="font-size:15px;line-height:1.9;white-space:pre-wrap">' +
+          esc(stemText) + '</div>');
+      }
 
       // 题目配图（图形推理、资料分析图表、数量关系公式图等）
       // 这些题的 options 是空的，内容全在图里，不渲染就等于题目不完整。
-      if ((q.imgs || []).length) {
+      // 若已有 stemHtml（内联图已随文字渲染），imgs 里的图就是同一批，
+      // 不能再渲染一次，否则题干下方会重复出现。
+      if (!stemHtml && (q.imgs || []).length) {
         var _imgs = q.imgs.filter(function (x) { return x; });
         if (_imgs.length) {
           // 注意 align-items:flex-start：flex 列容器默认 stretch 会把

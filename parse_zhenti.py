@@ -257,7 +257,10 @@ def parse_block(block: str, no_raw: str, qid: str, sub_raw: str,
     imgs = IMG_RE.findall(stem_part)
     stem = strip_tags(stem_part)
     stem = re.sub(r"^\s*-{3,}\s*$", "", stem, flags=re.M).strip()
-    stem = stem.strip("- \n")
+    # 只去掉首尾空白，不能 strip("-")：数列题的题干可能以负号开头
+    # （如「-3，-1，2，7，14，（ ）」），strip("- \n") 会把负号一起删掉，
+    # 使题目变成另一个数列，答案也随之错误。
+    stem = stem.strip()
 
     # 选项内容里也偶尔带图
     opt_imgs = []

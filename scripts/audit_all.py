@@ -245,6 +245,31 @@ def main():
     for x in k_list[:10]:
         print(f"     [{x[0]}] {x[1]}  {x[2]}")
 
+    # ── L. 题干有内联图但 stemHtml 缺失（数字/公式与文字脱节）──
+    # 根因：parse_zhenti.py 把题干里的 <img> 全抽进 imgs 数组，
+    # 题干只剩标点。典型数列题「1/4，2/4，3/4，（ ）」入库后
+    # stem 变成 "，，，，（ ）"，四张数字图被竖排在题干下方，
+    # 数字与逗号的位置关系彻底丢失，题目无法作答。
+    # 判据：stem 去掉标点后几乎无内容（<4 个有效字符），但 imgs 有 >=2 张图，
+    # 且没有 stemHtml —— 说明图本该在文字中间却没还原。
+    # 只有 1 张图的不算：那是「题干（ ）+ 下方一张整题图」的正常排版
+    # （数据全在图里，如 quantity 12881927 的 500px 题图）。
+    print("\n[L] 题干只剩标点但有配图（内联图与文字脱节）")
+    l_list = []
+    PUNCT_RE = re.compile(r"[，。、；：？！“”‘’（）()《》\s\dA-Za-z·—…\-\.]+")
+    for c, arr in data.items():
+        for q in arr:
+            stem = str(q.get("stem") or "")
+            if PUNCT_RE.sub("", stem):
+                continue
+            if len([x for x in (q.get("imgs") or []) if x]) < 2:
+                continue
+            if not str(q.get("stemHtml") or "").strip():
+                l_list.append((c, str(q.get("id")), stem[:24], len(q.get("imgs") or [])))
+    print(f"   合计 {len(l_list)} 题")
+    for x in l_list[:10]:
+        print(f"     [{x[0]}] {x[1]}  {x[2]}  图{x[3]}张")
+
 
 if __name__ == "__main__":
     main()

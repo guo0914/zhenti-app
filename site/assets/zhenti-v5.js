@@ -438,7 +438,8 @@
         <div class="explain-b">${renderExplain(q.explain)}</div>
       </div>` : '';
 
-    const imgsHtml = (q.imgs || []).length
+    const stemHtmlInline = String(q.stemHtml || '').trim();
+    const imgsHtml = (!stemHtmlInline && (q.imgs || []).length)
       ? `<div class="q-img-wrap">${q.imgs.map(s => `<img src="${esc(s)}" alt="题目图" data-ztimg>`).join('')}</div>`
       : '';
 
@@ -486,7 +487,7 @@
           <div class="q-body">
             ${matHtml}
             ${imgsHtml}
-            <div class="stem">${esc(q.stem)}</div>
+            <div class="stem">${stemHtmlInline || esc(q.stem)}</div>
             <div class="options">${optHtml}</div>
             ${explainHtml}
           </div>
