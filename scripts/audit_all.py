@@ -83,19 +83,21 @@ def main():
     for x in b_list[:8]:
         print(f"     [{x[0]}] {x[1]}  含图选项={x[2]}  {x[3]}")
 
-    # ── C. 选项空 + imgs 数量与选项数不符 ──
-    print("\n[C] 选项全空但 imgs 数量 < 选项数（可能丢选项图）")
+    # ── C. 选项空 + 选项图数量与选项数不符 ──
+    # 注意：选项图存在 optionImgs（与 options 等长），不是 imgs（题干配图）。
+    # 早期用 imgs 判据会把「选项图齐全、题干另有配图」的题误报成缺图。
+    print("\n[C] 选项全空但 optionImgs 数量 < 选项数（可能丢选项图）")
     c_list = []
     for c, arr in data.items():
         for q in arr:
             opts = [str(o).strip() for o in (q.get("options") or [])]
-            imgs = [i for i in (q.get("imgs") or []) if i]
-            if opts and not any(opts) and len(imgs) < len(opts):
-                c_list.append((c, str(q.get("id")), len(opts), len(imgs),
+            optimgs = [i for i in (q.get("optionImgs") or []) if i]
+            if opts and not any(opts) and len(optimgs) < len(opts):
+                c_list.append((c, str(q.get("id")), len(opts), len(optimgs),
                                (q.get("stem") or "")[:30]))
     print(f"   合计 {len(c_list)} 题")
     for x in c_list[:10]:
-        print(f"     [{x[0]}] {x[1]}  选项{x[2]}个 图片{x[3]}张  {x[4]}")
+        print(f"     [{x[0]}] {x[1]}  选项{x[2]}个 选项图{x[3]}张  {x[4]}")
 
     # ── D. 材料错配：题干自带 ____ 却挂材料 ──
     print("\n[D] 题干自带____却挂材料（材料多余）")
