@@ -205,6 +205,22 @@ def main():
     for x in i_list[:10]:
         print(f"     [{x[0]}] {x[1]} [{x[2]}] html图{x[3]} < optionImgs{x[4]}")
 
+    # ── J. 选项文本残留 HTML 标签 ──
+    # 根因：guokao 分支解析选项时保留了 <p>/<u> 等标签，
+    # 前端 esc() 会把它们当普通文字显示，用户看到「<p>…</p>」。
+    print("\n[J] 选项文本残留 HTML 标签（界面会显示成 <p>…</p>）")
+    j_list = []
+    tag_re = re.compile(r"<(p|u|br|span|div|strong|b|em|img)\b", re.I)
+    for c, arr in data.items():
+        for q in arr:
+            for i, o in enumerate(q.get("options") or []):
+                if o and tag_re.search(str(o)):
+                    j_list.append((c, str(q.get("id")), i, str(o)[:40]))
+                    break
+    print(f"   合计 {len(j_list)} 题")
+    for x in j_list[:10]:
+        print(f"     [{x[0]}] {x[1]} 选项{x[2]}  {x[3]}")
+
 
 if __name__ == "__main__":
     main()
