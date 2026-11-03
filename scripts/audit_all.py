@@ -397,19 +397,21 @@ def main():
     for x in q_list[:10]:
         print(f"     {x[0][:24]} {x[1]} 实际 {x[2]} / 声明 {x[3]}")
 
-    # ── R. 法律多选题答案判定：answers 未判过就揭晓（选一个就出解析）──
+    # ── R. 答案判定时机：answers 未判过就揭晓（多选选一个就出解析）──
     # 前端用 a.revealed 标记「已判」。这里做静态检查，防止回归成
     # `var show = !!a`（只要点过任意一项就当已答）。
-    print("\n[R] 法律模块答案揭晓时机（多选题选一项不能立刻出解析）")
-    law_src = io.open(os.path.join(ROOT, "site/assets/law-v5.js"),
-                      encoding="utf-8").read()
+    # 法律模块（law-v5.js，多选/不定项）与套卷模块（papers-v5.js）都要查。
+    print("\n[R] 答案揭晓时机（多选题选一项不能立刻出解析）")
     r_list = []
-    if "var show = !!a;" in law_src:
-        r_list.append("law-v5.js 仍有 `var show = !!a;`（未判就揭晓）")
-    if "a.revealed = true" not in law_src:
-        r_list.append("law-v5.js 的 judge() 没有设置 a.revealed")
-    if "if (a0 && a0.revealed) return;" not in law_src:
-        r_list.append("law-v5.js 选项点击未按 revealed 拦重复作答")
+    for fname in ("site/assets/law-v5.js", "site/assets/papers-v5.js"):
+        src = io.open(os.path.join(ROOT, fname), encoding="utf-8").read()
+        short = fname.split("/")[-1]
+        if "var show = !!a;" in src:
+            r_list.append(f"{short} 仍有 `var show = !!a;`（未判就揭晓）")
+        if "a.revealed = true" not in src:
+            r_list.append(f"{short} 的 judge() 没有设置 a.revealed")
+        if "if (a0 && a0.revealed) return;" not in src:
+            r_list.append(f"{short} 选项点击未按 revealed 拦重复作答")
     print(f"   合计 {len(r_list)} 处")
     for x in r_list[:10]:
         print(f"     {x}")

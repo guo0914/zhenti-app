@@ -510,13 +510,15 @@
     function render() {
       var q = pool[idx];
       var a = answers[q.id];
-      var show = !!a;
+      // 只有「已判过」才算揭晓答案。多选/不定项在勾选阶段不能立刻出解析
+      // （与 law-v5.js 保持一致；当前行测/国考卷答案均为单选，行为不变）。
+      var show = !!(a && a.revealed);
       var isShenlun = !!(q.refAnswer !== undefined || q.refPoints ||
                          q.materials !== undefined || q.title !== undefined ||
                          String(q.id || '').indexOf('sl-') === 0);
       var keys = q.optionKeys && q.optionKeys.length ? q.optionKeys : ['A', 'B', 'C', 'D'];
       var opts = q.options || [];
-      var answeredN = Object.keys(answers).length;
+      var answeredN = Object.keys(answers).filter(function (k) { return answers[k].revealed; }).length;
       var okN = Object.keys(answers).filter(function (k) { return answers[k].ok; }).length;
       var elapsed = Math.floor((Date.now() - startTs) / 1000);
       var left = limitSec ? Math.max(0, limitSec - elapsed) : 0;
@@ -835,18 +837,20 @@
       // 选项点击（表格布局下选择器是 .opt-cell）
       $$('.opt-cell', v).forEach(function (b) {
         b.onclick = function () {
-          if (answers[q.id]) return;
+          var a0 = answers[q.id];
+          if (a0 && a0.revealed) return;   // 已判答案后不可改
           var key = b.dataset.k;
           var multi = String(q.answer || '').length > 1;
-          var cur = (answers[q.id] && answers[q.id].sel) || [];
+          var cur = (a0 && a0.sel) ? a0.sel.slice() : [];
           if (multi) {
             var i2 = cur.indexOf(key);
             if (i2 >= 0) cur.splice(i2, 1); else cur.push(key);
+            answers[q.id] = { sel: cur.slice(), ok: false, revealed: false };
           } else {
             cur = [key];
+            answers[q.id] = { sel: cur.slice(), ok: false, revealed: false };
+            judge(q);
           }
-          answers[q.id] = { sel: cur.slice(), ok: false };
-          if (!multi) judge(q);
           render();
         };
       });
@@ -890,6 +894,7 @@
       var sel = a.sel.slice().sort().join('');
       var ans = String(q.answer || '').split('').sort().join('');
       a.ok = sel === ans;
+      a.revealed = true;   // 判过之后才揭晓对错与解析
       if (a.ok) removeWrong(q.id); else addWrong(q.id);
     }
 
@@ -898,7 +903,7 @@
       finished = true;
       if (timerId) clearInterval(timerId);
 
-      var ids = Object.keys(answers);
+      var ids = Object.keys(answers).filter(function (k) { return answers[k].revealed; });
       var okN = ids.filter(function (k) { return answers[k].ok; }).length;
       var elapsed = Math.round((Date.now() - startTs) / 1000);
 
