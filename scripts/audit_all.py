@@ -369,8 +369,53 @@ def main():
     for x in p_list[:10]:
         print(f"     [{x[0]}] {x[1]}  {x[2]}处  {x[3]}")
 
+    # ── Q. 套卷分模块题数与模块声明不一致（点专项会混进整卷）──
+    # 前端 P.start 用 q.cat 过滤模块。若卷内 modules[].count 与
+    # 该模块实际题数不符，说明 qids 归类错了，专项练习会串模块。
+    print("\n[Q] 套卷分模块题数与 modules 声明不一致")
+    papers = json.load(io.open(os.path.join(ROOT, "site/data/zt-papers.json"),
+                               encoding="utf-8"))["papers"]
+    qidx = {}
+    for c, arr in data.items():
+        for q in arr:
+            qidx[str(q.get("id"))] = q
+    q_list = []
+    for p in papers:
+        if str(p.get("kind")) == "shenlun":
+            continue
+        act = {}
+        for qid in p.get("qids") or []:
+            q = qidx.get(str(qid))
+            if not q:
+                continue
+            c = str(q.get("cat") or "")
+            act[c] = act.get(c, 0) + 1
+        for m in p.get("modules") or []:
+            if act.get(m["cat"], 0) != m["count"]:
+                q_list.append((p.get("paper"), m["cat"], act.get(m["cat"], 0), m["count"]))
+    print(f"   合计 {len(q_list)} 处")
+    for x in q_list[:10]:
+        print(f"     {x[0][:24]} {x[1]} 实际 {x[2]} / 声明 {x[3]}")
+
+    # ── R. 法律多选题答案判定：answers 未判过就揭晓（选一个就出解析）──
+    # 前端用 a.revealed 标记「已判」。这里做静态检查，防止回归成
+    # `var show = !!a`（只要点过任意一项就当已答）。
+    print("\n[R] 法律模块答案揭晓时机（多选题选一项不能立刻出解析）")
+    law_src = io.open(os.path.join(ROOT, "site/assets/law-v5.js"),
+                      encoding="utf-8").read()
+    r_list = []
+    if "var show = !!a;" in law_src:
+        r_list.append("law-v5.js 仍有 `var show = !!a;`（未判就揭晓）")
+    if "a.revealed = true" not in law_src:
+        r_list.append("law-v5.js 的 judge() 没有设置 a.revealed")
+    if "if (a0 && a0.revealed) return;" not in law_src:
+        r_list.append("law-v5.js 选项点击未按 revealed 拦重复作答")
+    print(f"   合计 {len(r_list)} 处")
+    for x in r_list[:10]:
+        print(f"     {x}")
+
     print("\n" + "=" * 64)
-    print(f"  审计完成：共 16 项判据（A~P）")
+    print(f"  审计完成：共 18 项判据（A~R）")
     print("=" * 64)
 
 

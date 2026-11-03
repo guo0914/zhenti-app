@@ -335,6 +335,17 @@
       paperMeta.qids.forEach(function (id) { want[String(id)] = true; });
       pool = pool.filter(function (q) { return want[String(q.id)]; });
 
+      // 关键：分模块练习必须再按模块过滤。
+      // needCats 只决定「从哪些分片取题」，取到的是整个分片；
+      // 少了这一层，点「数量专项」也会把整卷 130 题全塞进来。
+      // 严格按 q.cat 比对即可：已校验 42 套行测卷的 modules.count
+      // 与卷内题目实际 cat 分布完全一致（bad=0），judge/graph 各自独立。
+      // 申论题没有 cat 字段（整卷就是 shenlun 一个模块），跳过过滤。
+      if (moduleCat && moduleCat !== 'all' && moduleCat !== 'shenlun') {
+        var _mc = String(moduleCat);
+        pool = pool.filter(function (q) { return String(q.cat || '') === _mc; });
+      }
+
       // 卷面顺序：先按模块顺序分组，组内再按模块内题号递增。
       // 不能先按 no 排序——no 是「模块内编号」，
       // 政治第1题与常识第1题都是 no=1，会交错成

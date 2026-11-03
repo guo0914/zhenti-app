@@ -412,7 +412,8 @@
     function render() {
       var q = pool[idx];
       var a = answers[q.id];
-      var show = !!a;
+      // 只有「已判过」才算揭晓答案；多选仅仅勾选一项不能立刻出解析
+      var show = !!(a && a.revealed);
       var keys = q.optionKeys || ['A', 'B', 'C', 'D'];
       var opts = q.options || [];
 
@@ -451,7 +452,7 @@
           '</tr>';
         }).join('') + '</table>';
 
-      var doneN = Object.keys(answers).length;
+      var doneN = Object.keys(answers).filter(function (k) { return answers[k].revealed; }).length;
       var okN = Object.keys(answers).filter(function (k) { return answers[k].ok; }).length;
 
       // 章节/考点信息
@@ -541,21 +542,22 @@
       // 交互（表格布局下选择器是 .opt-cell）
       $$('.opt-cell', v).forEach(function (b) {
         b.onclick = function () {
-          if (answers[q.id]) return;   // 已答不可改
+          var a0 = answers[q.id];
+          if (a0 && a0.revealed) return;   // 已判答案后不可改
           var key = b.dataset.k;
-          var cur = (answers[q.id] && answers[q.id].sel) || [];
+          var cur = (a0 && a0.sel) ? a0.sel.slice() : [];
           // 多选/不定项都允许选多个；单选点一个即判
           var multi = q.qtype === '多选' || q.qtype === '不定项' ||
                       (q.answer || '').length > 1;
           if (multi) {
             var i = cur.indexOf(key);
             if (i >= 0) cur.splice(i, 1); else cur.push(key);
+            answers[q.id] = { sel: cur.slice(), ok: false, revealed: false };
           } else {
             cur = [key];
+            answers[q.id] = { sel: cur.slice(), ok: false, revealed: false };
+            judge(q);   // 单选选中即判
           }
-          answers[q.id] = { sel: cur.slice(), ok: false };
-          // 多选需要手动对答案，单选选中即判
-          if (!multi) judge(q);
           render();
         };
       });
@@ -657,6 +659,7 @@
       var sel = a.sel.slice().sort().join('');
       var ans = (q.answer || '').split('').sort().join('');
       a.ok = sel === ans;
+      a.revealed = true;          // 判过之后才揭晓对错与解析
       addStat(q.id, a.ok);
       if (a.ok) removeWrong(q.id); else addWrong(q.id);
     }
